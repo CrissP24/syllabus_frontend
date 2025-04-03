@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://syllabus-backend.onrender.com/api/auth/";
+const API_URL = process.env.REACT_APP_API_URL + "/api/auth/";
 
 
 class AuthService {
