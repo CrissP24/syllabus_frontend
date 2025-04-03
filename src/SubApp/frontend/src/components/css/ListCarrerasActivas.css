@@ -1,0 +1,81 @@
+/* ListCarrerasActivas.css */
+body {
+    font-family: Georgia, serif; /* Use Georgia font */
+}
+
+.carreras-heading {
+    text-align: center;
+    color: #333;
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.carreras-heading-icon {
+    font-size: 1.2em; /* Adjust icon size */
+    color: #333;
+}
+
+.error {
+    color: red;
+    text-align: center;
+}
+
+.carreras-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 20px auto;
+    max-width: 800px;
+}
+
+.carreras-item {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.carreras-item:last-child {
+    border-bottom: none;
+}
+
+.carreras-item-container {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between; /* Space between items and buttons */
+    align-items: center;
+    margin-bottom: 10px; /* Space between containers */
+}
+
+.carreras-info {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Justify items to the start */
+    flex: 1; /* Take up available space */
+    margin-right: 80px; /* Increase spacing between the item and the button */
+}
+
+.carreras-link {
+    text-decoration: none;
+    color: white;
+    background-color: #333;
+    padding: 8px 16px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+    font-size: 0.75em; /* Smaller font size */
+    white-space: nowrap; /* Prevent text from wrapping */
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between icon and text */
+}
+
+.carreras-link-icon {
+    font-size: 1em; /* Adjust icon size */
+}
+
+.carreras-link:hover {
+    background-color: #555;
+}

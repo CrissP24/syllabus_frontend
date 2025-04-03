@@ -1,0 +1,81 @@
+.cp-materias-container {
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    padding: 20px;
+    background-color: #f9f9f9;
+    width: 50%;
+    height: 20vh;
+}
+
+.cp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.cp-back-button {
+    background-color: #333;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+
+}
+
+.cp-back-button:hover {
+    background-color: #218838;
+}
+
+.cp-title {
+    margin: 0 auto;
+    text-align: center;
+    flex-grow: 1;
+}
+
+.cp-materias-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.cp-materia-card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cp-materia-card p {
+    margin: 10px 0;
+}
+
+.cp-materia-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.cp-delete-button {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+
+}
+
+.cp-delete-button:hover {
+    background-color: #333;
+}
+
+.cp-loading, .cp-error-message {
+    text-align: center;
+    font-size: 18px;
+}

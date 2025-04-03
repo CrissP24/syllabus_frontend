@@ -1,0 +1,34 @@
+/* Home.css */
+.welcome-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    height: 80vh; /* Ocupar la altura completa de la ventana */
+    margin: 10px auto 0; /* Add top margin to separate from the menu */
+    padding: 20px;
+    max-width: 400px; /* Reduce la anchura del contenido */
+    border-radius: 10px;
+    background-color: #f4f4f4; /* Fondo suave */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra suave */
+}
+
+.welcome-icon {
+    font-size: 4rem; /* Tamaño grande del ícono */
+    color: #4b6584; /* Color que representa algo educativo */
+    margin-bottom: 20px; /* Espaciado debajo del ícono */
+}
+
+h1 {
+    font-family: 'Georgia', serif; /* Fuente elegante */
+    font-size: 2.5rem;
+    color: #2d3436; /* Color oscuro para el título */
+    margin-bottom: 10px;
+}
+
+p {
+    font-size: 1.2rem;
+    color: #636e72; /* Color más claro para el texto */
+    margin-bottom: 0;
+}

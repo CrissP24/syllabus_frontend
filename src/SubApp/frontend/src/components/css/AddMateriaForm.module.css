@@ -1,0 +1,101 @@
+.formContainer {
+    max-width: 600px;
+    margin: 20px auto; /* Añadido margen superior e inferior */
+    padding: 30px; /* Aumentado el padding para más espacio interno */
+    background-color: #ffffff;
+    border-radius: 12px; /* Esquinas más redondeadas */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); /* Sombra más pronunciada */
+    font-family: 'Georgia', serif;
+}
+
+.addMateriaForm {
+    display: flex;
+    flex-direction: column;
+}
+
+h2 {
+    text-align: center;
+    font-size: 24px; /* Aumentado el tamaño de la fuente */
+    margin-bottom: 20px; /* Espaciado inferior */
+}
+.noUnderline {
+    text-decoration: none;
+}
+.formRow {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px; /* Aumentado el margen inferior */
+}
+
+.formGroup {
+    flex: 1;
+    margin-right: 15px; /* Aumentado el margen derecho */
+}
+
+.formGroup:last-child {
+    margin-right: 0;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px; /* Aumentado el margen inferior */
+    font-weight: bold;
+    font-size: 18px; /* Tamaño de fuente ligeramente reducido */
+}
+
+.formInput {
+    width: 100%;
+    padding: 10px; /* Aumentado el padding */
+    border: 1px solid #ccc;
+    border-radius: 6px; /* Esquinas más redondeadas */
+    box-sizing: border-box;
+    transition: border-color 0.3s; /* Transición suave para el borde */
+}
+
+.formInput:focus {
+    border-color: #29b64a; /* Color del borde al enfocar */
+    outline: none; /* Sin contorno */
+}
+
+.reactSelectContainer {
+    width: 100%;
+}
+
+/* Estilo para el tamaño de letra de los elementos seleccionables */
+.reactSelectContainer select {
+    font-size: 12px; /* Tamaño de letra reducido */
+    padding: 8px; /* Ajustar padding si es necesario */
+}
+
+.buttonGroup {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 25px; /* Aumentado el margen superior */
+}
+
+.addButton, .backButton {
+    padding: 12px 25px; /* Aumentado el padding */
+    border: none;
+    border-radius: 6px; /* Esquinas más redondeadas */
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s; /* Transición suave para el fondo */
+}
+
+.addButton {
+    background-color: #29b64a;
+    color: white;
+}
+
+.backButton {
+    background-color: #3e3d3d;
+    color: white;
+}
+
+.addButton:hover {
+    background-color: #218838; /* Color de fondo al pasar el mouse */
+}
+
+.backButton:hover {
+    background-color: #626161; /* Color de fondo al pasar el mouse */
+}

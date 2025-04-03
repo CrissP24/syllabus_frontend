@@ -1,0 +1,152 @@
+/* styles.css */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+th {
+    background-color: #f2f2f2;
+    text-align: left;
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.flex-container {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    background-color: #f0f0f0; /* Fondo gris claro */
+    border-radius: 5px; /* Bordes redondeados */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra ligera */
+}
+
+.table-cell-small {
+    font-weight: bold; /* Texto en negrita */
+    color: #333; /* Color del texto */
+}
+
+.flex-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.small-text {
+    font-size: 0.6em; /* Ajusta el tamaño de la fuente a un valor más pequeño */
+}
+
+.table-cell-small {
+    font-weight: bold;
+    color: #333;
+}
+
+/* Completa.css */
+.download-button {
+    margin-top: 20px;
+    float: right;
+    padding: 30px 90px;
+    background-color: #2e5a30;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px; /* Ajusta el tamaño de la fuente según sea necesario */
+    text-align: center;
+    font-family: Georgia, serif; /* Tipo de letra Georgia */
+}
+
+.download-button:hover {
+    background-color: #3d7d3f;
+}
+
+.table-header {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+.table-subheader {
+    background-color: #e6e6e6;
+}
+
+.table-row {
+    background-color: #ffffff;
+}
+
+.table-cell {
+    padding: 10px;
+    border: 1px solid #ddd;
+}
+
+.table-cell-small {
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.flex-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.small-text {
+    font-size: 0.9em;
+    color: #555;
+}
+
+.unidad-amarillo {
+    background-color: #fff9c4; /* Amarillo bajo */
+}
+
+.unidad-verde {
+    background-color: #c8e6c9; /* Verde bajo */
+}
+
+.unidad-azul {
+    background-color: #bbdefb; /* Azul bajo */
+}
+
+.button-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+
+
+.download-button:hover {
+    background-color: #2e5a30;
+}
+
+.zoom-buttons {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 10px;
+    margin-right: 10px;
+}
+
+.zoom-button {
+    background-color: #2e5a30;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 5px;
+    margin: 0 2px;
+    transition: background-color 0.3s;
+}
+
+.zoom-button:hover {
+    background-color: #1e3a20;
+}
+
+.zoom-button i {
+    margin-right: 3px;
+}

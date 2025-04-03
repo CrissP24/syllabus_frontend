@@ -1,0 +1,109 @@
+.datatable-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.datatable-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.datatable-actions button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  font-size: 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.datatable-actions button:hover {
+  background-color: #0056b3;
+}
+
+.datatable-actions input[type="file"] {
+  padding: 5px;
+}
+
+.datatable {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.datatable th,
+.datatable td {
+  border: 1px solid #ddd;
+  padding: 12px 15px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.datatable th {
+  background-color: #4caf50;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.datatable tr:hover {
+  background-color: #f5f5f5;
+}
+
+.datatable .selected {
+  background-color: #e0ffe0;
+}
+
+.datatable .selected-row {
+  background-color: #f9f9f9;
+}
+
+.datatable td input[type="text"] {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+.datatable td input[type="checkbox"] {
+  margin: 0;
+}
+
+.datatable .remove-cell {
+  cursor: pointer;
+  color: #e74c3c;
+  font-weight: bold;
+  margin-left: 5px;
+  font-size: 16px;
+  transition: color 0.3s ease;
+}
+
+.datatable .remove-cell:hover {
+  color: #c0392b;
+}
+
+.datatable td input[type="text"]:disabled {
+  background-color: #f0f0f0;
+}
+
+.datatable th, td {
+  transition: background-color 0.3s ease;
+}
+
+.datatable-container h2 {
+  text-align: center;
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 20px;
+}
