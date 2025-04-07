@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import { TextField, Box, InputLabel, FormControl, Select, MenuItem, Button, ButtonGroup, FormHelperText, Snackbar } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -13,11 +13,12 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-
+import * as XLSX from 'xlsx';
+import UploadFileIcon from '@mui/icons-material/UploadFile'; // Add this import
 function Actividades() {
   const [abreviatura, setAbreviatura] = useState('');
   const [texto, setTexto] = useState('');
-  const [estado, setEstado] = useState('');
+  
   const [errores, setErrores] = useState({ texto: '', abreviatura: '', estado: '' });
   const [listaFunciones, setListaFunciones] = useState([]);
   const [listaActividades, setListaActividades] = useState([]);
@@ -30,7 +31,7 @@ function Actividades() {
   const [codigoGenerado, setCodigoGenerado] = useState('');
   const [codigoFuncionSustantiva, setCodigoFuncionSustantiva] = useState('');
   const [disabled, setDisabled] = useState(false);
-
+  const [estado, setEstado] = useState('Desactivado'); 
   const opcionesEstado = [
     { valor: 'Activado', etiqueta: 'Activado' },
     { valor: 'Desactivado', etiqueta: 'Desactivado' },
@@ -56,8 +57,28 @@ function Actividades() {
     }
   }, [codigoFuncionSustantiva]);
 
+  useEffect(() => {
+    const loadAllActivities = async () => {
+      try {
+        const response = await Axios.get('http://localhost:5002/acti');
+        setListaActividades(response.data);
+      } catch (error) {
+        console.error('Error loading activities:', error);
+      }
+    };
+    
+    loadAllActivities();
+  }, []);
   
-
+  const getAllActividades = async () => {
+    try {
+      const response = await Axios.get('http://localhost:5002/acti');
+      setListaActividades(response.data);
+    } catch (error) {
+      console.error('Error loading activities:', error);
+    }
+  };
+  
   const obtenerActividades = async (codigoFuncionSustantiva) => {
     try {
       const response = await Axios.get(`http://localhost:5002/acti/${codigoFuncionSustantiva}`);
@@ -244,6 +265,151 @@ function Actividades() {
       enqueueSnackbar('Error al eliminar la Actividad Extracurricular', { variant: 'error' });
     }
   };
+ // Add function to get codfun from activity code
+// Update function to get codfun from activity code using distributivo_funcionsus data
+const getCodfunFromCode = (codigo) => {
+  const prefix = codigo?.split('.')?.[0];
+  const codeMap = {
+    'GES': 9,  // Updated with actual codfunsus
+    'DOC': 5,
+    'INV': 8,
+    'TUT': 7,
+    'VIN': 10
+  };
+  return codeMap[prefix];
+};
+
+const handleFileUpload = (e) => {
+  const file = e.target.files[0];
+  const reader = new FileReader();
+  
+  reader.onload = async (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      
+      const csvData = XLSX.utils.sheet_to_csv(worksheet, { 
+        skipHidden: true,
+        strip: true,
+        blankrows: false
+      });
+
+      const rows = csvData.split('\n').slice(4);
+      
+      const activities = rows
+        .filter(row => row.trim())
+        .map(row => {
+          const [, codigo, actividad] = row.split(',');
+          const codfun = getCodfunFromCode(codigo?.trim());
+          
+          if (!codfun) {
+            console.log('Código no válido:', codigo);
+            return null;
+          }
+
+          return {
+            codfun,
+            codacex: codigo?.trim(),
+            actividad: actividad?.trim(),
+            estadoactex: 'Desactivado'
+          };
+        })
+        .filter(Boolean);
+
+      console.log('Activities to import:', activities);
+
+      const response = await Axios.post('http://localhost:5002/acti/import', activities);
+      
+      if (response.data.errors?.length) {
+        enqueueSnackbar(
+          `Importación parcial: ${response.data.imported} exitosas, ${response.data.errors.length} errores`, 
+          { variant: 'warning' }
+        );
+      } else {
+        enqueueSnackbar(`${activities.length} actividades importadas correctamente`, { 
+          variant: 'success' 
+        });
+      }
+
+      await getAllActividades();
+      
+    } catch (error) {
+      console.error('Error importing:', error);
+      enqueueSnackbar(
+        error.response?.data?.message || 'Error al importar actividades', 
+        { variant: 'error' }
+      );
+    }
+  };
+
+  reader.readAsArrayBuffer(file);
+};
+  const handleImportXml = (event) => {
+  const file = event.target.files[0];
+  const reader = new FileReader();
+
+  reader.onload = (e) => {
+    const xmlData = e.target.result;
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlData, 'text/xml');
+
+    const actividadesXml = xmlDoc.querySelectorAll('actividad');
+    const nuevasActividades = [];
+
+    actividadesXml.forEach(actividadXml => {
+      const codfun = actividadXml.querySelector('codfun').textContent;
+      const actividad = actividadXml.querySelector('actividad').textContent;
+
+      // Set default values for other fields if they're not in the XML
+      const estadoactex = actividadXml.querySelector('estadoactex')?.textContent || 'Desactivado'; // Default: Desactivado
+
+      nuevasActividades.push({
+        codfun,
+        actividad,
+        estadoactex
+      });
+    });
+
+    // Update the state with the imported activities
+    setListaActividades(nuevasActividades);
+
+    // Populate the form fields with the first imported activity (if any)
+    if (nuevasActividades.length > 0) {
+      const primeraActividad = nuevasActividades[0];
+      
+      // Find the corresponding function name and set it in the form
+      const funcionEncontrada = listaFunciones.find(f => f.codfunsus === primeraActividad.codfun);
+      if (funcionEncontrada) {
+        setTexto(funcionEncontrada.funsus); // Set the function name
+        setCodigoFuncionSustantiva(primeraActividad.codfun);
+        generarCodigo(funcionEncontrada.funsus); // Generate the code
+      }
+      setAbreviatura(primeraActividad.actividad);
+      setEstado(primeraActividad.estadoactex);
+
+      // Set the action to 'agregar' if you want to automatically add the imported activities
+      setAccion('agregar'); 
+      setDisabled(false); // Enable the form fields
+
+      // Clear any previous errors
+      setErrores({ texto: '', abreviatura: '', estado: '' });
+    }
+
+    enqueueSnackbar('XML importado correctamente', { variant: 'success' });
+  };
+
+  reader.readAsText(file);
+};
+const handleDeleteAll = async () => {
+  try {
+    await Axios.delete('http://localhost:5002/acti-delete-all');
+    enqueueSnackbar('Todas las actividades han sido eliminadas', { variant: 'success' });
+    setListaActividades([]);
+  } catch (error) {
+    enqueueSnackbar('Error al eliminar las actividades', { variant: 'error' });
+  }
+};
 
   return (
     <>
@@ -340,9 +506,44 @@ function Actividades() {
           >
             Nuevo
           </Button>
+          <input
+            accept=".xml"
+            id="import-xml"
+            type="file"
+            style={{ display: 'none' }}
+            onChange={handleImportXml}
+          />
+           <Button
+            color="error"
+            startIcon={<DeleteForeverIcon />}
+            onClick={handleDeleteAll}
+            sx={{ fontWeight: 'bold' }}
+          >
+            Eliminar Todo
+          </Button>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
+          <input
+            accept=".xlsx"
+            id="import-xlsx" 
+            type="file"
+            style={{ display: 'none' }}
+            onChange={handleFileUpload}
+          />
+          <label htmlFor="import-xlsx">
+            <Button
+              variant="contained"
+              component="span"
+              color="primary" 
+              startIcon={<UploadFileIcon />}
+            >
+              Importar XLSX
+            </Button>
+          </label>
+        </Box>
+         
         </Box>
       </Box>
-      {listaActividades && listaActividades.length > 0 && (
+      
         <Box
           component="div"
           width={1000}
@@ -353,18 +554,18 @@ function Actividades() {
           sx={{ border: '2px solid grey', m: 20, mx: 26, mt: -25 }}
         >
           <TableContainer component={Paper} sx={{ margin: '0 auto' }}>
-            <Table sx={{ minWidth: 650 }} aria-label="simple table">
-              <TableHead>
-                <TableRow>
-                  <TableCell align="center"><b>N.</b></TableCell>
-                  <TableCell align="center"><b>Código</b></TableCell>
-                  <TableCell align="center"><b>Actividad</b></TableCell>
-                  <TableCell align="center"><b>Estado</b></TableCell>
-                  <TableCell align="center"><b>Acciones</b></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {listaActividades.map((actividad, index) => (
+        <Table sx={{ minWidth: 650 }} aria-label="simple table">
+          <TableHead>
+            <TableRow>
+              <TableCell align="center"><b>N.</b></TableCell>
+              <TableCell align="center"><b>Código</b></TableCell>
+              <TableCell align="center"><b>Actividad</b></TableCell>
+              <TableCell align="center"><b>Estado</b></TableCell>
+              <TableCell align="center"><b>Acciones</b></TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {listaActividades.map((actividad, index) => (
                   <TableRow key={actividad.codacex} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                     <TableCell component="th" scope="row" align="center">{index + 1}</TableCell>
                     <TableCell align="center">{actividad.codacex}</TableCell>
@@ -386,7 +587,9 @@ function Actividades() {
                             setAbrirSnackbar(true);
                           }}
                         />
+                      
                       </ButtonGroup>
+                      
                     </TableCell>
                   </TableRow>
                 ))}
@@ -394,7 +597,6 @@ function Actividades() {
             </Table>
           </TableContainer>
         </Box>
-      )}
       <Snackbar
         open={abrirSnackbar}
         autoHideDuration={6000}
@@ -415,6 +617,7 @@ function Actividades() {
             >
               Confirmar
             </Button>
+           
           </>
         }
       />
@@ -423,3 +626,4 @@ function Actividades() {
 }
 
 export default Actividades;
+
