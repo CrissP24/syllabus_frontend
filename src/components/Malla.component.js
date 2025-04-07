@@ -6,7 +6,8 @@ const Malla = () => {
       <iframe
         src="https://modulosyllabus-frontend.vercel.app/"
         style={{ width: "100%", height: "100%", border: "none" }}
-        title="Vista Localhost"
+        title="Malla Curricular - Sitio Externo"
+        allowFullScreen
       ></iframe>
     </div>
   );
