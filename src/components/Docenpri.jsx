@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { TextField, Box, InputLabel, FormControl, Select, MenuItem, Button, ButtonGroup, FormHelperText, Snackbar } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -33,7 +33,7 @@ function Docenpri() {
   const [codigoFuncionSustantiva, setCodigoFuncionSustantiva] = useState('');
   const [fechaInicio, setFechaInicio] = useState(null);
   const [disabled, setDisabled] = useState(false);
-
+  const [fechaFinal, setFechaFinal] = useState(null);
   const opcionesEstado = [
     { valor: 'Activado', etiqueta: 'Activado' },
     { valor: 'Desactivado', etiqueta: 'Desactivado' },
