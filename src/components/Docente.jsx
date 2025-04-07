@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   TextField, Box, InputLabel, FormControl, Select, MenuItem, Button,
-  ButtonGroup, FormHelperText, Snackbar, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Paper
+  ButtonGroup, Snackbar, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, Paper,CircularProgress
 } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -12,347 +12,457 @@ import Axios from 'axios';
 import { useSnackbar } from 'notistack';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 function Docente() {
-  const [abreviatura, setAbreviatura] = useState('');
-  const [texto, setTexto] = useState('');
+  const [cedula, setCedula] = useState('');
+  const [primerNombre, setPrimerNombre] = useState('');
+  const [primerApellido, setPrimerApellido] = useState('');
+  const [fechaNacimiento, setFechaNacimiento] = useState(null);
+  const [telefono, setTelefono] = useState('');
+  const [direccion, setDireccion] = useState('');
+  const [correo, setCorreo] = useState('');
+  const [facultad, setFacultad] = useState('');
+  const [carrera, setCarrera] = useState('');
   const [estado, setEstado] = useState('');
-  const [errores, setErrores] = useState({ texto: '', abreviatura: '', estado: '', fechaInicio: '', fechaFinal: '' });
-  const [listaFunciones, setListaFunciones] = useState([]);
+  const [errores, setErrores] = useState({});
+  const [listaDocentes, setListaDocentes] = useState([]);
   const { enqueueSnackbar } = useSnackbar();
-  const [id, setId] = useState(null);
   const [accion, setAccion] = useState('agregar');
   const [abrirSnackbar, setAbrirSnackbar] = useState(false);
   const [mensajeSnackbar, setMensajeSnackbar] = useState('');
-
-  const [fechaInicio, setFechaInicio] = useState(null);
-  const [fechaFinal, setFechaFinal] = useState(null);
   const [idEliminar, setIdEliminar] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const facultades = [
+    { id: 1, nombre: 'CIENCIAS TÉCNICAS' },
+    { id: 2, nombre: 'CIENCIAS ECONÓMICAS' }
+  ];
+
+  const carreras = {
+    1: [
+      { id: 1, nombre: 'TECNOLOGÍAS DE LA INFORMACIÓN' },
+      { id: 2, nombre: 'INGENIERÍA CIVIL' },
+      { id: 3, nombre: 'TELEMÁTICA' }
+    ],
+    2: [
+      { id: 4, nombre: 'ADMINISTRACIÓN DE EMPRESAS' },
+      { id: 5, nombre: 'INGENIERÍA EN CONTABILIDAD Y AUDITORÍA' },
+      { id: 6, nombre: 'TURISMO' }
+    ]
+  };
 
   const opcionesEstado = [
     { valor: 'Activado', etiqueta: 'Activado' },
     { valor: 'Desactivado', etiqueta: 'Desactivado' },
   ];
+  const [uploadLoading, setUploadLoading] = useState(false);
+
+
 
   useEffect(() => {
-    mostrarFunciones();
+    mostrarDocentes();
   }, []);
 
-  const handleChange = (event) => {
-    setEstado(event.target.value);
-    setErrores({ ...errores, estado: '' });
-  };
-
-  const handleTextChange = (event) => {
-    const newTexto = event.target.value.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s]/g, '');
-    setTexto(newTexto);
-    setErrores({ ...errores, texto: newTexto.trim() === '' ? 'Ingrese texto' : '' });
-  };
-
-  const handleAbreviaturaChange = (event) => {
-    const nuevaAbreviatura = event.target.value.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ\s]/g, '');
-    setAbreviatura(nuevaAbreviatura);
-    setErrores({ ...errores, abreviatura: nuevaAbreviatura.trim() === '' ? 'Ingrese texto' : '' });
-  };
-  
-
-  const handleFechaInicioChange = (newDate) => {
-    setFechaInicio(newDate);
-    if (fechaFinal && newDate && fechaFinal < newDate) {
-      setFechaFinal(null);
+  const mostrarDocentes = async () => {
+    setLoading(true);
+    try {
+      const response = await Axios.get('http://localhost:5002/docent');
+      console.log('Docentes:', response.data); // Debug
+      setListaDocentes(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error:', error);
+      enqueueSnackbar('Error al cargar docentes', { variant: 'error' });
+      setListaDocentes([]);
+    } finally {
+      setLoading(false);
     }
-    setErrores({ ...errores, fechaInicio: newDate ? '' : 'La fecha de inicio es obligatoria' });
-  };
-
-  const handleFechaFinalChange = (newDate) => {
-    setFechaFinal(newDate);
-    setErrores({ ...errores, fechaFinal: newDate ? '' : 'La fecha final es obligatoria' });
-  };
-
-  const handleAgregar = () => {
-    setAccion('agregar');
-    limpiarFormulario();
   };
 
   const limpiarFormulario = () => {
-    setTexto('');
-    setAbreviatura('');
+    setCedula('');
+    setPrimerNombre('');
+    setPrimerApellido('');
+    setFechaNacimiento(null);
+    setTelefono('');
+    setDireccion('');
+    setCorreo('');
+    setFacultad('');
+    setCarrera('');
     setEstado('');
-    setFechaInicio(null);
-    setFechaFinal(null);
-    setErrores({ texto: '', abreviatura: '', estado: '', fechaInicio: '', fechaFinal: '' });
-    setTimeout(() => {
-      document.getElementById('fs').focus();
-    }, 0);
+    setErrores({});
+    setAccion('agregar');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+// Update handleSubmit function
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    const textoError = texto.trim() === '' ? 'Ingrese texto' : '';
-    const abreviaturaError = abreviatura.trim() === '' ? 'Ingrese texto' : '';
-    const estadoError = estado === '' ? 'Seleccione una opción' : '';
-    const fechaInicioError = fechaInicio === null ? 'La fecha de inicio es obligatoria' : '';
-    const fechaFinalError = fechaFinal === null ? 'La fecha final es obligatoria' : '';
+  const validationErrors = {};
+  if (!cedula || cedula.length !== 10) validationErrors.cedula = 'La cédula debe tener 10 dígitos';
+  if (!primerNombre) validationErrors.primerNombre = 'El nombre es requerido';
+  if (!primerApellido) validationErrors.primerApellido = 'El apellido es requerido';
+  if (!fechaNacimiento) validationErrors.fechaNacimiento = 'La fecha es requerida';
+  if (!telefono || telefono.length !== 10) validationErrors.telefono = 'El teléfono debe tener 10 dígitos';
+  if (!direccion) validationErrors.direccion = 'La dirección es requerida';
+  if (!correo) validationErrors.correo = 'El correo es requerido';
+  if (!estado) validationErrors.estado = 'El estado es requerido';
 
-    setErrores({ texto: textoError, abreviatura: abreviaturaError, estado: estadoError, fechaInicio: fechaInicioError, fechaFinal: fechaFinalError });
+  if (Object.keys(validationErrors).length > 0) {
+    setErrores(validationErrors);
+    enqueueSnackbar('Por favor complete todos los campos requeridos', { variant: 'error' });
+    return;
+  }
 
-    if (textoError || abreviaturaError || estadoError || fechaInicioError || fechaFinalError) {
-      enqueueSnackbar('Por favor, complete todos los campos requeridos, incluyendo las fechas.', { variant: 'error' });
-      return;
-    }
-    const formatFecha = (date) => {
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0'); 
-      const year = date.getFullYear();
-      return `${month}/${day}/${year}`;
+  try {
+    const formattedDate = fechaNacimiento ? fechaNacimiento.toISOString().split('T')[0] : null;
+    
+    const docenteData = {
+      ced: cedula,
+      nomape: `${primerNombre} ${primerApellido}`,
+      fechana: formattedDate,
+      tele: telefono,
+      dire: direccion,
+      correo: correo,
+      estadoc: estado
     };
 
-  const fechaInicioFormatted = formatFecha(fechaInicio);
-  const fechaFinalFormatted = formatFecha(fechaFinal);
-
     if (accion === 'agregar') {
-      const existe = listaFunciones.some((func) => func.funsus === texto);
-      if (existe) {
-        enqueueSnackbar('El período ya existe', { variant: 'error' });
-        limpiarFormulario();
-        return;
-      }
-
-      try {
-        await Axios.post('http://localhost:5002/perio', {
-          abre: abreviatura,
-          peri: texto,
-          fechai: fechaInicioFormatted,
-          fechaf: fechaFinalFormatted,
-          estaperi: estado,
-        });
-        limpiarFormulario();
-        mostrarFunciones();
-        enqueueSnackbar('Período registrado', { variant: 'success' });
-      } catch (error) {
-        enqueueSnackbar('Error al registrar el período', { variant: 'error' });
-        limpiarFormulario();
-      }
-    } else if (accion === 'editar' && id) {
-      
-      try {
-        
-        await Axios.put(`http://localhost:5002/perio/${id}`, {
-          
-          abre: abreviatura,
-          peri: texto,
-          fechai: fechaInicioFormatted,  
-          fechaf: fechaFinalFormatted,
-          estaperi: estado,  
-        });
-        mostrarFunciones();
-        enqueueSnackbar('Período actualizado', { variant: 'success' });
-        limpiarFormulario();
-        setAccion('agregar');
-      } catch (error) {
-        enqueueSnackbar('Error al actualizar el período', { variant: 'error' });
-      }
+      await Axios.post('http://localhost:5002/docent', docenteData);
+      enqueueSnackbar('Docente registrado exitosamente', { variant: 'success' });
+    } else {
+      await Axios.put(`http://localhost:5002/docent/${cedula}`, docenteData);
+      enqueueSnackbar('Docente actualizado exitosamente', { variant: 'success' });
     }
-  };
 
-  const mostrarFunciones = async () => {
+    limpiarFormulario();
+    mostrarDocentes();
+  } catch (error) {
+    console.error('Error:', error);
+    enqueueSnackbar(error.response?.data?.message || 'Error al procesar la solicitud', { variant: 'error' });
+  }
+};
+
+// Update table section
+
+  const eliminarDocente = async (id) => {
     try {
-      const response = await Axios.get('http://localhost:5002/perio');
-      if (Array.isArray(response.data)) {
-        setListaFunciones(response.data);
-      } else {
-        setListaFunciones([]);  
-      }
+      await Axios.delete(`http://localhost:5002/docent/${id}`);
+      mostrarDocentes();
+      enqueueSnackbar('Docente eliminado exitosamente', { variant: 'success' });
+      setAbrirSnackbar(false);
     } catch (error) {
-      setListaFunciones([]);  
+      enqueueSnackbar('Error al eliminar el docente', { variant: 'error' });
     }
   };
 
-  const editarFuncion = (funcion) => {
-    setId(funcion.codpre);
-    setAbreviatura(funcion.abre);
-    setTexto(funcion.peri);
-    setFechaInicio(new Date(funcion.fechai));  
-    setFechaFinal(new Date(funcion.fechaf));  
-    
-    setEstado(funcion.estaperi);
-    setErrores({ texto: '', abreviatura: '', fechai: '', fechaf: '', estado: '' });
+  const editarDocente = (docente) => {
+    setCedula(docente.ced);
+    setPrimerNombre(docente.primer_nombre);
+    setPrimerApellido(docente.primer_apellido);
+    setFechaNacimiento(new Date(docente.fechana));
+    setTelefono(docente.tele);
+    setDireccion(docente.dire);
+    setCorreo(docente.correo);
+    setFacultad(docente.facultad);
+    setCarrera(docente.carrera);
+    setEstado(docente.estado);
     setAccion('editar');
   };
-
-  const eliminarFuncion = async (idEliminar) => {
+  
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+  
+    setUploadLoading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+  
     try {
-      await Axios.delete(`http://localhost:5002/perio/${idEliminar}`);
-      mostrarFunciones();
-      enqueueSnackbar('Período eliminado', { variant: 'success' });
+      const response = await Axios.post('http://localhost:5002/docent/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+  
+      enqueueSnackbar(`${response.data.count} docentes importados exitosamente`, {
+        variant: 'success'
+      });
+      mostrarDocentes();
     } catch (error) {
-      enqueueSnackbar('Error al eliminar el Período', { variant: 'error' });
+      console.error('Error:', error);
+      enqueueSnackbar(error.response?.data?.message || 'Error al cargar el archivo', {
+        variant: 'error'
+      });
+    } finally {
+      setUploadLoading(false);
+      event.target.value = null;
     }
   };
-
   return (
     <>
       <div className="contenedor">
-        <h2>PERÍODOS</h2>
+        <h2 style={{ textAlign: 'center' }}>DOCENTES</h2>
       </div>
       <Box
         component="form"
-        width={500}
-        display="flex"
-        flexDirection="column"
-        gap={2}
-        p={2}
-        sx={{ border: '2px solid grey', m: 30, mx: 60, mt: 5 }}
         onSubmit={handleSubmit}
+        sx={{
+          width: '50%', // Reduced from 80%
+          maxWidth: '600px',
+          margin: '2rem auto',
+          padding: '2rem',
+          border: '2px solid grey',
+          borderRadius: '8px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 3,
+          '& .MuiFormControl-root': {
+            minWidth: '100%'
+          }
+        }}
       >
-        <TextField
-          id="fs"
-          label="Código"
-          variant="outlined"
-          fullWidth
-          required
-          error={Boolean(errores.abreviatura)}
-          helperText={errores.abreviatura || ''}
-          value={abreviatura}
-          onChange={handleAbreviaturaChange}
-        />
-        <TextField
-          id="fs1"
-          label="Período"
-          variant="outlined"
-          fullWidth
-          required
-          error={Boolean(errores.texto)}
-          helperText={errores.texto || ''}
-          value={texto}
-          onChange={handleTextChange}
-        />
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <DatePicker
-            label="Fecha de Inicio"
-            value={fechaInicio}
-            onChange={handleFechaInicioChange}
-            renderInput={(params) => <TextField {...params} fullWidth />}
+        {/* Row 1 - Faculty and Career */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+          <FormControl required error={Boolean(errores.facultad)}>
+            <InputLabel>Facultad</InputLabel>
+            <Select
+              value={facultad}
+              onChange={(e) => {
+                setFacultad(e.target.value);
+                setCarrera('');
+              }}
+              label="Facultad"
+            >
+              {facultades.map((fac) => (
+                <MenuItem key={fac.id} value={fac.id}>{fac.nombre}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+  
+          <FormControl required error={Boolean(errores.carrera)} disabled={!facultad}>
+            <InputLabel>Carrera</InputLabel>
+            <Select
+              value={carrera}
+              onChange={(e) => setCarrera(e.target.value)}
+              label="Carrera"
+            >
+              {facultad && carreras[facultad]?.map((car) => (
+                <MenuItem key={car.id} value={car.id}>{car.nombre}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+    <TextField
+      label="Nombre"
+      value={primerNombre}
+      onChange={(e) => {
+        const value = e.target.value.replace(/[^A-Za-zÁ-ÿ\s]/g, '');
+        setPrimerNombre(value);
+      }}
+      error={Boolean(errores.primerNombre)}
+      helperText={errores.primerNombre}
+      required
+    />
+    <TextField
+      label="Apellido" 
+      value={primerApellido}
+      onChange={(e) => {
+        const value = e.target.value.replace(/[^A-Za-zÁ-ÿ\s]/g, '');
+        setPrimerApellido(value);
+      }}
+      error={Boolean(errores.primerApellido)}
+      helperText={errores.primerApellido}
+      required
+    />
+  </Box>
+        {/* Row 2 - Personal Info */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+          <TextField
+            label="Cédula"
+            value={cedula}
+            onChange={(e) => setCedula(e.target.value.replace(/[^0-9]/g, ''))}
+            error={Boolean(errores.cedula)}
+            helperText={errores.cedula}
             required
-            error={Boolean(errores.fechaInicio)}
-            helperText={errores.fechaInicio || ''}
+            inputProps={{ maxLength: 10 }}
           />
-          <DatePicker
-            label="Fecha Final"
-            value={fechaFinal}
-            minDate={fechaInicio}  // Restringe la selección a fechas mayores o iguales a la fecha de inicio
-            onChange={handleFechaFinalChange}
-            renderInput={(params) => <TextField {...params} fullWidth />}
+          <TextField
+            label="Teléfono"
+            value={telefono}
+            onChange={(e) => setTelefono(e.target.value.replace(/[^0-9]/g, ''))}
+            error={Boolean(errores.telefono)}
+            helperText={errores.telefono}
             required
-            error={Boolean(errores.fechaFinal)}
-            helperText={errores.fechaFinal || ''}
+            inputProps={{ maxLength: 10 }}
           />
-        </LocalizationProvider>
-        <FormControl fullWidth>
-          <InputLabel id="dl" sx={{ mt: 0 }}>
-            Opción
-          </InputLabel>
-          <Select
-            labelId="dl"
-            id="ds"
-            value={estado}
-            variant="outlined"
-            label="Estado"
-            sx={{ mt: 0 }}
-            onChange={handleChange}
-            error={Boolean(errores.estado)}
+        </Box>
+  
+        {/* Row 3 - Date and Email */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="Fecha de Nacimiento"
+              value={fechaNacimiento}
+              onChange={setFechaNacimiento}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  required
+                  error={Boolean(errores.fechaNacimiento)}
+                  helperText={errores.fechaNacimiento}
+                />
+              )}
+            />
+          </LocalizationProvider>
+          <TextField
+            label="Correo"
+            type="email"
+            value={correo}
+            onChange={(e) => setCorreo(e.target.value)}
+            error={Boolean(errores.correo)}
+            helperText={errores.correo}
             required
-          >
-            {opcionesEstado.map((opcion) => (
-              <MenuItem value={opcion.valor} key={opcion.valor}>
-                {opcion.etiqueta}
-              </MenuItem>
-            ))}
-          </Select>
-          {errores.estado && <FormHelperText error>{errores.estado}</FormHelperText>}
-        </FormControl>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
-          <Button
-            type="submit"
-            color="success"
-            startIcon={<SaveIcon sx={{ ml: '0.5rem' }} />}
-            sx={{ fontWeight: 'bold' }}
-          >
-            Guardar
-          </Button>
-          <Button
-            color="info"
-            startIcon={<AddCircleOutlineIcon sx={{ ml: '0.5rem' }} />}
-            onClick={handleAgregar}
-            sx={{ fontWeight: 'bold' }}
-          >
-            Nuevo
-          </Button>
+          />
+        </Box>
+  
+        {/* Row 4 - Address and Status */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+          <TextField
+            label="Dirección"
+            value={direccion}
+            onChange={(e) => setDireccion(e.target.value)}
+            error={Boolean(errores.direccion)}
+            helperText={errores.direccion}
+            required
+          />
+          <FormControl required error={Boolean(errores.estado)}>
+            <InputLabel>Estado</InputLabel>
+            <Select
+              value={estado}
+              onChange={(e) => setEstado(e.target.value)}
+              label="Estado"
+            >
+              {opcionesEstado.map((opcion) => (
+                <MenuItem key={opcion.valor} value={opcion.valor}>
+                  {opcion.etiqueta}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+  
+        {/* Action Buttons */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center', mt: 2 }}>
+  {/* CRUD Buttons */}
+  <ButtonGroup>
+    <Button
+      type="submit"
+      variant="contained"
+      color="primary"
+      startIcon={<SaveIcon />}
+    >
+      {accion === 'agregar' ? 'Guardar' : 'Actualizar'}
+    </Button>
+    <Button
+      variant="contained"
+      color="secondary"
+      startIcon={<AddCircleOutlineIcon />}
+      onClick={limpiarFormulario}
+    >
+      Nuevo
+    </Button>
+  </ButtonGroup>
+
+<Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 2 }}>
+  <input
+    accept=".csv,.xlsx,.xls"
+    style={{ display: 'none' }}
+    id="file-upload"
+    type="file"
+    onChange={handleFileUpload}
+    disabled={uploadLoading}
+  />
+  <label htmlFor="file-upload">
+    <Button
+      component="span"
+      variant="contained"
+      color="primary"
+      startIcon={<CloudUploadIcon />}
+      disabled={uploadLoading}
+      sx={{ minWidth: '200px' }}
+    >
+      {uploadLoading ? 'Procesando...' : 'Importar Docentes'}
+    </Button>
+  </label>
+  {uploadLoading && (
+    <CircularProgress size={24} sx={{ ml: 1 }} />
+  )}
+</Box>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2 }}></Box>
         </Box>
       </Box>
-      <Box
-        component="div"
-        width={1000}
-        display="flex"
-        alignItems="center"
-        gap={2}
-        p={2}
-        sx={{ border: '2px solid grey', m: 20, mx: 26, mt: -25 }}
-      >
-        <TableContainer component={Paper} sx={{ margin: '0 auto' }}>
-          <Table sx={{ minWidth: 650 }} aria-label="simple table">
-            <TableHead>
-              <TableRow>
-                <TableCell align="center"><b>N.</b></TableCell>
-                <TableCell align="center"><b>Código</b></TableCell>
-                <TableCell align="center"><b>Periodo</b></TableCell>                
-                <TableCell align="center"><b>Fecha de Inicio</b></TableCell>
-                <TableCell align="center"><b>Fecha Final</b></TableCell>
-                <TableCell align="center"><b>Estado</b></TableCell>
-                <TableCell align="center"><b>Acciones</b></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {listaFunciones.length === 0 ? (
-                <TableRow>
-                  <TableCell align="center" colSpan={7}>No hay datos disponibles</TableCell>
-                </TableRow>
-              ) : (
-                listaFunciones.map((funcion, index) => (
-                  <TableRow key={index} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                    <TableCell component="th" scope="row" align="center">{index + 1}</TableCell>
-                    <TableCell align="center">{funcion.abre}</TableCell>
-                    <TableCell align="center">{funcion.peri}</TableCell>                    
-                    <TableCell align="center"> {funcion.fechai}</TableCell>
-                    <TableCell align="center">{funcion.fechaf}</TableCell>                    
-                    <TableCell align="center">{funcion.estaperi}</TableCell>
-                    <TableCell align="center">
-                      <ButtonGroup variant="contained" aria-label="button group">
-                        <Button
-                          color="success"
-                          startIcon={<UpdateIcon sx={{ ml: '0.5rem' }} />}
-                          onClick={() => editarFuncion(funcion)}
-                        ></Button>
-                        <Button
-                          color="error"
-                          startIcon={<DeleteForeverIcon sx={{ ml: '0.5rem' }} />}
-                          onClick={() => {
-                            setIdEliminar(funcion.codpre);
-                            setMensajeSnackbar(`¿Seguro que desea eliminar el período "${funcion.abre}"?`);
-                            console.log(funcion.codpre);
-                            setAbrirSnackbar(true);
-                          }}
-                        ></Button>
-                      </ButtonGroup>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
+    
+      <TableContainer component={Paper} sx={{ margin: '2rem' }}>
+  <Table>
+    <TableHead>
+      <TableRow>
+        <TableCell>N°</TableCell>
+        <TableCell>Cédula</TableCell>
+        <TableCell>Nombre y Apellido</TableCell>
+        <TableCell>Fecha Nacimiento</TableCell>
+        <TableCell>Teléfono</TableCell>
+        <TableCell>Dirección</TableCell>
+        <TableCell>Correo</TableCell>
+        <TableCell>Estado</TableCell>
+        <TableCell>Acciones</TableCell>
+      </TableRow>
+    </TableHead>
+    <TableBody>
+      {loading ? (
+        <TableRow>
+          <TableCell colSpan={9} align="center">Cargando...</TableCell>
+        </TableRow>
+      ) : listaDocentes.length === 0 ? (
+        <TableRow>
+          <TableCell colSpan={9} align="center">No hay docentes registrados</TableCell>
+        </TableRow>
+      ) : (
+        listaDocentes.map((docente, index) => (
+          <TableRow key={docente.ced}>
+            <TableCell>{index + 1}</TableCell>
+            <TableCell>{docente.ced}</TableCell>
+            <TableCell>{docente.nomape}</TableCell>
+            <TableCell>{new Date(docente.fechana).toLocaleDateString()}</TableCell>
+            <TableCell>{docente.tele}</TableCell>
+            <TableCell>{docente.dire}</TableCell>
+            <TableCell>{docente.correo}</TableCell>
+            <TableCell>{docente.estadoc}</TableCell>
+            <TableCell>
+              <ButtonGroup>
+                <Button
+                  color="primary"
+                  onClick={() => editarDocente(docente)}
+                  startIcon={<UpdateIcon />}
+                />
+                <Button
+                  color="error"
+                  onClick={() => {
+                    setIdEliminar(docente.ced);
+                    setMensajeSnackbar(`¿Desea eliminar al docente ${docente.nomape}?`);
+                    setAbrirSnackbar(true);
+                  }}
+                  startIcon={<DeleteForeverIcon />}
+                />
+              </ButtonGroup>
+            </TableCell>
+          </TableRow>
+        ))
+      )}
+    </TableBody>
+  </Table>
+</TableContainer>
+
       <Snackbar
         open={abrirSnackbar}
         autoHideDuration={6000}
@@ -366,10 +476,7 @@ function Docente() {
             <Button
               color="primary"
               size="small"
-              onClick={() => {
-                eliminarFuncion(idEliminar);
-                setAbrirSnackbar(false);
-              }}
+              onClick={() => eliminarDocente(idEliminar)}
             >
               Confirmar
             </Button>
