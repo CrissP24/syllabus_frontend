@@ -4,7 +4,7 @@ const Malla = () => {
   return (
     <div style={{ width: "100%", height: "100vh", border: "none" }}>
       <iframe
-        src="http://localhost:3000"
+        src="https://modulosyllabus-frontend.vercel.app/"
         style={{ width: "100%", height: "100%", border: "none" }}
         title="Vista Localhost"
       ></iframe>
