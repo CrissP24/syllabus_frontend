@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Container, Row, Col } from "react-bootstrap";
-import Sidebar from "./Sidebar"; // Nuevo componente para la navegación lateral
+import Sidebar from "./Sidebar";
 import Actividades from "./Actividades";
 import Distrifunc from "./Distrifunc";
 import Docente from "./Docente";
@@ -10,8 +10,8 @@ import ExcelGenerator from "./ExcelGenerator";
 import UserService from "../services/user.service";
 import EventBus from "../common/EventBus";
 import Malla from "./Malla.component";
-import GestionSyllabus from "./gestionsyllabus.component"
-
+import GestionSyllabus from "./gestionsyllabus.component";
+import Docenpri from "./Docenpri"; // ✅ Importación del nuevo componente
 
 export default class BoardAdmin extends Component {
   constructor(props) {
@@ -83,11 +83,12 @@ export default class BoardAdmin extends Component {
         return <DataTable data={excelData} onSelectionChange={this.handleSelectionChange} />;
       case "excelgenerator":
         return <ExcelGenerator selectedData={selectedData} />;
-        case "malla":
-          return <Malla />;
-        case "syllabus":
-          return <GestionSyllabus/>;
-        
+      case "malla":
+        return <Malla />;
+      case "syllabus":
+        return <GestionSyllabus />;
+      case "docenpri": // ✅ Nueva sección
+        return <Docenpri />;
       default:
         return <p>Selecciona una opción para comenzar.</p>;
     }
