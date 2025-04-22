@@ -63,7 +63,7 @@ function Docenpri() {
 
   const obtenerActividades = async (codigoFuncionSustantiva) => {
     try {
-      const response = await Axios.get(`http://localhost:5002/acti/${codigoFuncionSustantiva}`);
+      const response = await Axios.get(`https://distributivo-backend.onrender.com/acti/${codigoFuncionSustantiva}`);
       return response.data;
     } catch (error) {
       console.error('Error al obtener las actividades:', error);
@@ -159,7 +159,7 @@ function Docenpri() {
     }
   
     try {
-      const response = await Axios.get(`http://localhost:5002/acti`);
+      const response = await Axios.get(`https://distributivo-backend.onrender.com/acti`);
       const todasActividades = response.data;
   
       const existeEnOtraFuncion = todasActividades.some(act => act.actividad === abreviatura && act.codfun !== codigoFuncionSustantiva );
@@ -173,7 +173,7 @@ function Docenpri() {
       // Inserción o actualización de la actividad
       if (accion === 'agregar') {
         
-        await Axios.post('http://localhost:5002/acti', {
+        await Axios.post('https://distributivo-backend.onrender.com/acti', {
           codfun: codigoFuncionSustantiva,
           codacex: codigoGenerado,
           actividad: abreviatura,
@@ -183,7 +183,7 @@ function Docenpri() {
         enqueueSnackbar('Actividad Extracurricular registrada', { variant: 'success' });
       } else if (accion === 'editar' && codigoGenerado) {
         console.log("hola")
-        await Axios.put(`http://localhost:5002/acti/${codigoGenerado}`, {
+        await Axios.put(`https://distributivo-backend.onrender.com/acti/${codigoGenerado}`, {
         
           codacex: codigoGenerado,
           actividad: abreviatura,
@@ -202,7 +202,7 @@ function Docenpri() {
 
   const mostrarFunciones = async () => {
     try {
-      const response = await Axios.get('http://localhost:5002/distris');
+      const response = await Axios.get('https://distributivo-backend.onrender.com/distris');
       setListaFunciones(response.data);
     } catch (error) {
       enqueueSnackbar('Error al obtener las funciones', { variant: 'error' });
@@ -211,7 +211,7 @@ function Docenpri() {
 
   const mostrarActividades = async (codfun) => {
     try {
-      const response = await Axios.get(`http://localhost:5002/acti/${codfun}`);
+      const response = await Axios.get(`https://distributivo-backend.onrender.com/acti/${codfun}`);
       
       if (Array.isArray(response.data)) {
         setListaActividades(response.data);
@@ -247,7 +247,7 @@ function Docenpri() {
 
   const eliminarActividad = async (id) => {
     try {
-      await Axios.delete(`http://localhost:5002/acti/${id}`);
+      await Axios.delete(`https://distributivo-backend.onrender.com/acti/${id}`);
       mostrarActividades(codigoFuncionSustantiva);
       enqueueSnackbar('Actividad Extracurricular eliminada', { variant: 'error' });
       limpiarFormulario();

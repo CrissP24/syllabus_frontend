@@ -181,7 +181,7 @@ class App extends Component {
           </div>
           {/* Footer */}
           <footer className="footer">
-            <p className="mb-0">© 2024 UNESUM. Todos los derechos reservados.</p>
+            <p className="mb-0">© {new Date().getFullYear()} UNESUM. Todos los derechos reservados.</p>
           </footer>
         </div>
       </div>

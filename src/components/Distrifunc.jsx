@@ -92,7 +92,7 @@ function Distrifunc() {
       }
 
       try {
-        await Axios.post("http://localhost:5002/distris", {
+        await Axios.post("https://distributivo-backend.onrender.com/distris", {
           abrevia: abreviatura,
           funsus: texto,
           estadofun: estado,
@@ -105,7 +105,7 @@ function Distrifunc() {
       }
     } else if (accion === 'editar' && id) {
       try {
-        await Axios.put(`http://localhost:5002/distris/${id}`, {
+        await Axios.put(`https://distributivo-backend.onrender.com/distris/${id}`, {
           abrevia: abreviatura,
           funsus: texto,
           estadofun: estado,
@@ -122,7 +122,7 @@ function Distrifunc() {
 
   const mostrarFunciones = async () => {
     try {
-      const response = await Axios.get("http://localhost:5002/distris");
+      const response = await Axios.get("https://distributivo-backend.onrender.com/distris");
       if (Array.isArray(response.data)) {
         setListaFunciones(response.data);
       } else {
@@ -146,7 +146,7 @@ function Distrifunc() {
 
   const eliminarFuncion = async (id) => {
     try {
-      await Axios.delete(`http://localhost:5002/distris/${id}`);
+      await Axios.delete(`https://distributivo-backend.onrender.com/distris/${id}`);
       mostrarFunciones();
       enqueueSnackbar('Función Sustantiva eliminada', { variant: 'success' });
     } catch (error) {

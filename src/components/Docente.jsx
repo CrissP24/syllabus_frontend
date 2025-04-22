@@ -66,7 +66,7 @@ function Docente() {
   const mostrarDocentes = async () => {
     setLoading(true);
     try {
-      const response = await Axios.get('http://localhost:5002/docent');
+      const response = await Axios.get('https://distributivo-backend.onrender.com/docent');
       console.log('Docentes:', response.data); // Debug
       setListaDocentes(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
@@ -127,10 +127,10 @@ const handleSubmit = async (e) => {
     };
 
     if (accion === 'agregar') {
-      await Axios.post('http://localhost:5002/docent', docenteData);
+      await Axios.post('https://distributivo-backend.onrender.com/docent', docenteData);
       enqueueSnackbar('Docente registrado exitosamente', { variant: 'success' });
     } else {
-      await Axios.put(`http://localhost:5002/docent/${cedula}`, docenteData);
+      await Axios.put(`https://distributivo-backend.onrender.com/docent/${cedula}`, docenteData);
       enqueueSnackbar('Docente actualizado exitosamente', { variant: 'success' });
     }
 
@@ -146,7 +146,7 @@ const handleSubmit = async (e) => {
 
   const eliminarDocente = async (id) => {
     try {
-      await Axios.delete(`http://localhost:5002/docent/${id}`);
+      await Axios.delete(`https://distributivo-backend.onrender.com/docent/${id}`);
       mostrarDocentes();
       enqueueSnackbar('Docente eliminado exitosamente', { variant: 'success' });
       setAbrirSnackbar(false);
@@ -178,7 +178,7 @@ const handleSubmit = async (e) => {
     formData.append('file', file);
   
     try {
-      const response = await Axios.post('http://localhost:5002/docent/upload', formData, {
+      const response = await Axios.post('https://distributivo-backend.onrender.com/docent/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
