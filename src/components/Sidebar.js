@@ -1,51 +1,49 @@
 import React from "react";
-import { Button } from "react-bootstrap";
+import { motion } from "framer-motion";
 import {
   FaTasks,
   FaUsersCog,
   FaCalendarAlt,
   FaBook,
   FaGraduationCap,
-  FaChalkboardTeacher, // Ícono para docentes principales
+  FaChalkboardTeacher,
 } from "react-icons/fa";
+import "./Sidebar.css"; // Asegúrate de tener este archivo o usa estilos inline
 
-const Sidebar = ({ setActiveSection }) => (
-  <div className="sidebar-buttons">
-    <Button variant="primary" className="w-100 mb-2" onClick={() => setActiveSection("actividades")}>
-      <FaTasks className="me-2" />
-      Gestión de Actividades
-    </Button>
+const menuItems = [
+  { icon: <FaUsersCog />, label: "Inicio", key: "home", color: "light" }, 
+  { icon: <FaTasks />, label: "Gestión de Actividades", key: "actividades", color: "primary" },
+  { icon: <FaUsersCog />, label: "Distribución de Funciones", key: "distrifunc", color: "success" },
+  { icon: <FaCalendarAlt />, label: "Gestión de Periodo", key: "docente", color: "warning" },
+  { icon: <FaBook />, label: "Programa Analítico", key: "datatable", color: "secondary" },
+  { icon: <FaBook />, label: "Gestión de Syllabus", key: "syllabus", color: "secondary" },
+  { icon: <FaGraduationCap />, label: "Malla Curricular", key: "malla", color: "info" },
+  { icon: <FaChalkboardTeacher />, label: "Docentes Principales", key: "docenpri", color: "dark" },
+  // Nueva sección "Inicio"
+];
 
-    <Button variant="success" className="w-100 mb-2" onClick={() => setActiveSection("distrifunc")}>
-      <FaUsersCog className="me-2" />
-      Distribución de Funciones
-    </Button>
-
-    <Button variant="warning" className="w-100 mb-2" onClick={() => setActiveSection("docente")}>
-      <FaCalendarAlt className="me-2" />
-      Gestión de Periodo
-    </Button>
-
-    <Button variant="secondary" className="w-100 mb-2" onClick={() => setActiveSection("datatable")}>
-      <FaBook className="me-2" />
-      Programa Analítico
-    </Button>
-
-    <Button variant="secondary" className="w-100 mb-2" onClick={() => setActiveSection("syllabus")}>
-      <FaBook className="me-2" />
-      Gestión de Syllabus
-    </Button>
-
-    <Button variant="info" className="w-100 mb-2" onClick={() => setActiveSection("malla")}>
-      <FaGraduationCap className="me-2" />
-      Malla Curricular
-    </Button>
-
-    <Button variant="dark" className="w-100 mb-2" onClick={() => setActiveSection("docenpri")}>
-      <FaChalkboardTeacher className="me-2" />
-      Docentes Principales
-    </Button>
-  </div>
-);
+const Sidebar = ({ setActiveSection }) => {
+  return (
+    <motion.div
+      className="sidebar-buttons"
+      initial={{ x: -100, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ type: "spring", stiffness: 80 }}
+    >
+      {menuItems.map((item, index) => (
+        <motion.button
+          key={index}
+          className={`btn btn-${item.color} w-100 mb-3 d-flex align-items-center justify-content-start sidebar-btn`}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setActiveSection(item.key)}
+        >
+          <span className="me-3 fs-5">{item.icon}</span>
+          <span className="sidebar-label">{item.label}</span>
+        </motion.button>
+      ))}
+    </motion.div>
+  );
+};
 
 export default Sidebar;

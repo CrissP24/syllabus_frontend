@@ -60,7 +60,7 @@ function Actividades() {
   useEffect(() => {
     const loadAllActivities = async () => {
       try {
-        const response = await Axios.get('http://localhost:5002/acti');
+        const response = await Axios.get('https://distributivo-backend.onrender.com/acti');
         setListaActividades(response.data);
       } catch (error) {
         console.error('Error loading activities:', error);
@@ -72,7 +72,7 @@ function Actividades() {
   
   const getAllActividades = async () => {
     try {
-      const response = await Axios.get('http://localhost:5002/acti');
+      const response = await Axios.get('https://distributivo-backend.onrender.com/acti');
       setListaActividades(response.data);
     } catch (error) {
       console.error('Error loading activities:', error);
@@ -81,7 +81,7 @@ function Actividades() {
   
   const obtenerActividades = async (codigoFuncionSustantiva) => {
     try {
-      const response = await Axios.get(`http://localhost:5002/acti/${codigoFuncionSustantiva}`);
+      const response = await Axios.get(`https://distributivo-backend.onrender.com/acti/${codigoFuncionSustantiva}`);
       return response.data;
     } catch (error) {
       console.error('Error al obtener las actividades:', error);
@@ -169,7 +169,7 @@ function Actividades() {
     }
   
     try {
-      const response = await Axios.get(`http://localhost:5002/acti`);
+      const response = await Axios.get(`https://distributivo-backend.onrender.com2/acti`);
       const todasActividades = response.data;
   
       const existeEnOtraFuncion = todasActividades.some(act => act.actividad === abreviatura && act.codfun !== codigoFuncionSustantiva );
@@ -183,7 +183,7 @@ function Actividades() {
       // Inserción o actualización de la actividad
       if (accion === 'agregar') {
         
-        await Axios.post('http://localhost:5002/acti', {
+        await Axios.post('https://distributivo-backend.onrender.com/acti', {
           codfun: codigoFuncionSustantiva,
           codacex: codigoGenerado,
           actividad: abreviatura,
@@ -193,7 +193,7 @@ function Actividades() {
         enqueueSnackbar('Actividad Extracurricular registrada', { variant: 'success' });
       } else if (accion === 'editar' && codigoGenerado) {
         console.log("hola")
-        await Axios.put(`http://localhost:5002/acti/${codigoGenerado}`, {
+        await Axios.put(`https://distributivo-backend.onrender.com/acti/${codigoGenerado}`, {
         
           codacex: codigoGenerado,
           actividad: abreviatura,
@@ -212,7 +212,7 @@ function Actividades() {
 
   const mostrarFunciones = async () => {
     try {
-      const response = await Axios.get('http://localhost:5002/distris');
+      const response = await Axios.get('https://distributivo-backend.onrender.com/distris');
       setListaFunciones(response.data);
     } catch (error) {
       enqueueSnackbar('Error al obtener las funciones', { variant: 'error' });
@@ -221,7 +221,7 @@ function Actividades() {
 
   const mostrarActividades = async (codfun) => {
     try {
-      const response = await Axios.get(`http://localhost:5002/acti/${codfun}`);
+      const response = await Axios.get(`https://distributivo-backend.onrender.com/acti/${codfun}`);
       
       if (Array.isArray(response.data)) {
         setListaActividades(response.data);
@@ -257,7 +257,7 @@ function Actividades() {
 
   const eliminarActividad = async (id) => {
     try {
-      await Axios.delete(`http://localhost:5002/acti/${id}`);
+      await Axios.delete(`https://distributivo-backend.onrender.com/acti/${id}`);
       mostrarActividades(codigoFuncionSustantiva);
       enqueueSnackbar('Actividad Extracurricular eliminada', { variant: 'error' });
       limpiarFormulario();
@@ -319,7 +319,7 @@ const handleFileUpload = (e) => {
 
       console.log('Activities to import:', activities);
 
-      const response = await Axios.post('http://localhost:5002/acti/import', activities);
+      const response = await Axios.post('https://distributivo-backend.onrender.com/acti/import', activities);
       
       if (response.data.errors?.length) {
         enqueueSnackbar(
@@ -403,7 +403,7 @@ const handleFileUpload = (e) => {
 };
 const handleDeleteAll = async () => {
   try {
-    await Axios.delete('http://localhost:5002/acti-delete-all');
+    await Axios.delete('https://distributivo-backend.onrender.com/acti-delete-all');
     enqueueSnackbar('Todas las actividades han sido eliminadas', { variant: 'success' });
     setListaActividades([]);
   } catch (error) {

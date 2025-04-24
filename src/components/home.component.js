@@ -25,6 +25,12 @@ const Home = () => {
           <div className="carousel-item">
             <img src="./imagen3.jpeg" className="d-block w-100" alt="Reportes" />
           </div>
+          <div className="carousel-item">
+            <img src="./imagen4.jpeg" className="d-block w-100" alt="Imagen 4" />
+          </div>
+          <div className="carousel-item">
+            <img src="./imagen5.jpeg" className="d-block w-100" alt="Imagen 5" />
+          </div>
         </div>
       </div>
 

@@ -23,6 +23,9 @@ import BoardSecretaria from "./components/board-secretaria.component";
 import BoardDecano from "./components/board-decano.component";
 import BoardComisionSilabos from "./components/board-comision-silabos.component";
 
+// Importa la imagen
+import logo from "./unesum.jpeg";
+
 class App extends Component {
   constructor(props) {
     super(props);
@@ -97,7 +100,9 @@ class App extends Component {
         <div className="flex-grow-1 d-flex flex-column min-vh-100">
           {/* Navbar */}
           <nav className="navbar navbar-expand-lg navbar-green px-3">
+            {/* Logo y nombre de la universidad */}
             <Link to={"/"} className="navbar-brand text-uppercase">
+              <img src={logo} alt="UNESUM Logo" style={{ width: '40px', height: '40px', marginRight: '10px' }} />
               UNESUM
             </Link>
             <div className="navbar-nav mr-auto">
