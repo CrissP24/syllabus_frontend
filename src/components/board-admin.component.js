@@ -1,3 +1,4 @@
+// BoardAdmin.js
 import React, { Component } from "react";
 import { Container, Row, Col, Image } from "react-bootstrap";
 import Sidebar from "./Sidebar";
@@ -12,6 +13,7 @@ import EventBus from "../common/EventBus";
 import Malla from "./Malla.component";
 import GestionSyllabus from "./gestionsyllabus.component";
 import Docenpri from "./Docenpri";
+import UserManagement from "./UserManagement"; // Import the new component
 import { motion } from "framer-motion";
 import { UserCog, FileSpreadsheet, ClipboardList, Users, Database } from "lucide-react";
 
@@ -73,9 +75,9 @@ export default class BoardAdmin extends Component {
       malla: <Malla />,
       syllabus: <GestionSyllabus />,
       docenpri: <Docenpri />,
+      usermanagement: <UserManagement />, // Add UserManagement component
     };
 
-    // Contenido por defecto si no hay sección activa
     return (
       componentMap[activeSection] || (
         <motion.div
