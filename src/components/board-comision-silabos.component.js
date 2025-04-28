@@ -362,3 +362,23 @@ const SyllabusScheduler = () => {
 };
 
 export default SyllabusScheduler;
+
+
+
+//direccion academica envia a vicerector y vicerector epueba y se sube//
+//comunicacion entre ambos a traves de comentarios//
+//comentario donde quiera el rector//
+//botones de aprobar y rechazar//
+
+
+
+//administrador//
+//vicerector//
+//direccion academica//
+//decano//
+//subdecanato//
+//cordinacion//
+//comision academica//
+
+
+//vicerector y direccion academica//

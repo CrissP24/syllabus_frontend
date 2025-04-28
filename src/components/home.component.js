@@ -41,7 +41,7 @@ const Home = () => {
             <div className="card h-100 shadow-sm">
               <div className="card-body">
                 <div className="mb-3" style={{ fontSize: '40px', color: '#007A33' }}>📘</div>
-                <h5 className="card-title fw-bold">Gestión de Sílabus</h5>
+                <h5 className="card-title fw-bold">Gestión de Syllabus</h5>
                 <p className="card-text">Crea y edita sílabus asegurando que cumplan con los estándares académicos de UNESUM.</p>
               </div>
             </div>
