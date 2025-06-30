@@ -30,7 +30,7 @@ const Sidebar = ({ user }) => {
       { path: "/decano", label: "Decano" },
     ],
     ROLE_COMISION_SILABOS: [
-      { path: "/comision_silabos", label: "Comisión de Sílabos" },
+      { path: "/comision_silabos", label: "Comisión de Syllabus" },
     ],
   };
 

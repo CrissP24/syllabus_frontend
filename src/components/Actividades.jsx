@@ -14,7 +14,8 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import * as XLSX from 'xlsx';
-import UploadFileIcon from '@mui/icons-material/UploadFile'; // Add this import
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+
 function Actividades() {
   const [abreviatura, setAbreviatura] = useState('');
   const [texto, setTexto] = useState('');
@@ -61,9 +62,15 @@ function Actividades() {
     const loadAllActivities = async () => {
       try {
         const response = await Axios.get('https://distributivo-backend.onrender.com/acti');
-        setListaActividades(response.data);
+        if (Array.isArray(response.data)) {
+          setListaActividades(response.data);
+        } else {
+          setListaActividades([]);
+          console.warn("loadAllActivities: response.data no es arreglo", response.data);
+        }
       } catch (error) {
         console.error('Error loading activities:', error);
+        setListaActividades([]);
       }
     };
     
@@ -73,9 +80,15 @@ function Actividades() {
   const getAllActividades = async () => {
     try {
       const response = await Axios.get('https://distributivo-backend.onrender.com/acti');
-      setListaActividades(response.data);
+      if (Array.isArray(response.data)) {
+        setListaActividades(response.data);
+      } else {
+        setListaActividades([]);
+        console.warn("getAllActividades: response.data no es arreglo", response.data);
+      }
     } catch (error) {
       console.error('Error loading activities:', error);
+      setListaActividades([]);
     }
   };
   
@@ -131,8 +144,6 @@ function Actividades() {
     setErrores({ ...errores, estado: '' });
   };
 
- 
-
   const handleAbreviaturaChange = (event) => {
     const nuevaAbreviatura = event.target.value.replace(/[^a-zA-ZáéíóúñÁÉÍÓÚÑ\s]/g, '');
     setAbreviatura(nuevaAbreviatura);
@@ -151,7 +162,8 @@ function Actividades() {
     setEstado('');
     setErrores({ texto: '', abreviatura: '', estado: '' });
     setTimeout(() => {
-      document.getElementById('fs').focus();
+      const inputFs = document.getElementById('fs');
+      if(inputFs) inputFs.focus();
     }, 0);
     setDisabled(false);
   };
@@ -182,7 +194,6 @@ function Actividades() {
      
       // Inserción o actualización de la actividad
       if (accion === 'agregar') {
-        
         await Axios.post('https://distributivo-backend.onrender.com/acti', {
           codfun: codigoFuncionSustantiva,
           codacex: codigoGenerado,
@@ -192,9 +203,7 @@ function Actividades() {
         mostrarActividades(codigoFuncionSustantiva);
         enqueueSnackbar('Actividad Extracurricular registrada', { variant: 'success' });
       } else if (accion === 'editar' && codigoGenerado) {
-        console.log("hola")
         await Axios.put(`https://distributivo-backend.onrender.com/acti/${codigoGenerado}`, {
-        
           codacex: codigoGenerado,
           actividad: abreviatura,
           estadoactex: estado,
@@ -213,7 +222,12 @@ function Actividades() {
   const mostrarFunciones = async () => {
     try {
       const response = await Axios.get('https://distributivo-backend.onrender.com/distris');
-      setListaFunciones(response.data);
+      if (Array.isArray(response.data)) {
+        setListaFunciones(response.data);
+      } else {
+        setListaFunciones([]);
+        enqueueSnackbar('Error: funciones no cargadas correctamente', { variant: 'error' });
+      }
     } catch (error) {
       enqueueSnackbar('Error al obtener las funciones', { variant: 'error' });
     }
@@ -222,7 +236,6 @@ function Actividades() {
   const mostrarActividades = async (codfun) => {
     try {
       const response = await Axios.get(`https://distributivo-backend.onrender.com/acti/${codfun}`);
-      
       if (Array.isArray(response.data)) {
         setListaActividades(response.data);
       } else if (response.data && typeof response.data === 'object') {
@@ -236,17 +249,14 @@ function Actividades() {
   };
 
   const editarActividad = (actividad) => {
-   setId(actividad.codfun)
-   const idf=actividad.codfun;
-   if (idf) {
-   const funcionSeleccionada = listaFunciones.find(funcion => funcion.codfunsus === idf);
-    if (funcionSeleccionada) {
-      
-      const mi = funcionSeleccionada.funsus;
-      
-      setTexto(mi);
+    setId(actividad.codfun);
+    const idf = actividad.codfun;
+    if (idf) {
+      const funcionSeleccionada = listaFunciones.find(funcion => funcion.codfunsus === idf);
+      if (funcionSeleccionada) {
+        setTexto(funcionSeleccionada.funsus);
+      }
     }
-  }
     setCodigoGenerado(actividad.codacex);
     setAbreviatura(actividad.actividad);
     setEstado(actividad.estadoactex);
@@ -265,151 +275,149 @@ function Actividades() {
       enqueueSnackbar('Error al eliminar la Actividad Extracurricular', { variant: 'error' });
     }
   };
- // Add function to get codfun from activity code
-// Update function to get codfun from activity code using distributivo_funcionsus data
-const getCodfunFromCode = (codigo) => {
-  const prefix = codigo?.split('.')?.[0];
-  const codeMap = {
-    'GES': 9,  // Updated with actual codfunsus
-    'DOC': 5,
-    'INV': 8,
-    'TUT': 7,
-    'VIN': 10
+
+  const getCodfunFromCode = (codigo) => {
+    const prefix = codigo?.split('.')?.[0];
+    const codeMap = {
+      'GES': 9,  // Actualiza con tus valores reales
+      'DOC': 5,
+      'INV': 8,
+      'TUT': 7,
+      'VIN': 10
+    };
+    return codeMap[prefix];
   };
-  return codeMap[prefix];
-};
 
-const handleFileUpload = (e) => {
-  const file = e.target.files[0];
-  const reader = new FileReader();
-  
-  reader.onload = async (e) => {
-    try {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      
-      const csvData = XLSX.utils.sheet_to_csv(worksheet, { 
-        skipHidden: true,
-        strip: true,
-        blankrows: false
-      });
-
-      const rows = csvData.split('\n').slice(4);
-      
-      const activities = rows
-        .filter(row => row.trim())
-        .map(row => {
-          const [, codigo, actividad] = row.split(',');
-          const codfun = getCodfunFromCode(codigo?.trim());
-          
-          if (!codfun) {
-            console.log('Código no válido:', codigo);
-            return null;
-          }
-
-          return {
-            codfun,
-            codacex: codigo?.trim(),
-            actividad: actividad?.trim(),
-            estadoactex: 'Desactivado'
-          };
-        })
-        .filter(Boolean);
-
-      console.log('Activities to import:', activities);
-
-      const response = await Axios.post('https://distributivo-backend.onrender.com/acti/import', activities);
-      
-      if (response.data.errors?.length) {
-        enqueueSnackbar(
-          `Importación parcial: ${response.data.imported} exitosas, ${response.data.errors.length} errores`, 
-          { variant: 'warning' }
-        );
-      } else {
-        enqueueSnackbar(`${activities.length} actividades importadas correctamente`, { 
-          variant: 'success' 
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        
+        const csvData = XLSX.utils.sheet_to_csv(worksheet, { 
+          skipHidden: true,
+          strip: true,
+          blankrows: false
         });
-      }
 
-      await getAllActividades();
-      
-    } catch (error) {
-      console.error('Error importing:', error);
-      enqueueSnackbar(
-        error.response?.data?.message || 'Error al importar actividades', 
-        { variant: 'error' }
-      );
-    }
+        const rows = csvData.split('\n').slice(4);
+        
+        const activities = rows
+          .filter(row => row.trim())
+          .map(row => {
+            const [, codigo, actividad] = row.split(',');
+            const codfun = getCodfunFromCode(codigo?.trim());
+            
+            if (!codfun) {
+              console.log('Código no válido:', codigo);
+              return null;
+            }
+
+            return {
+              codfun,
+              codacex: codigo?.trim(),
+              actividad: actividad?.trim(),
+              estadoactex: 'Desactivado'
+            };
+          })
+          .filter(Boolean);
+
+        console.log('Activities to import:', activities);
+
+        const response = await Axios.post('https://distributivo-backend.onrender.com/acti/import', activities);
+        
+        if (response.data.errors?.length) {
+          enqueueSnackbar(
+            `Importación parcial: ${response.data.imported} exitosas, ${response.data.errors.length} errores`, 
+            { variant: 'warning' }
+          );
+        } else {
+          enqueueSnackbar(`${activities.length} actividades importadas correctamente`, { 
+            variant: 'success' 
+          });
+        }
+
+        await getAllActividades();
+        
+      } catch (error) {
+        console.error('Error importing:', error);
+        enqueueSnackbar(
+          error.response?.data?.message || 'Error al importar actividades', 
+          { variant: 'error' }
+        );
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
   };
 
-  reader.readAsArrayBuffer(file);
-};
   const handleImportXml = (event) => {
-  const file = event.target.files[0];
-  const reader = new FileReader();
+    const file = event.target.files[0];
+    const reader = new FileReader();
 
-  reader.onload = (e) => {
-    const xmlData = e.target.result;
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(xmlData, 'text/xml');
+    reader.onload = (e) => {
+      const xmlData = e.target.result;
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlData, 'text/xml');
 
-    const actividadesXml = xmlDoc.querySelectorAll('actividad');
-    const nuevasActividades = [];
+      const actividadesXml = xmlDoc.querySelectorAll('actividad');
+      const nuevasActividades = [];
 
-    actividadesXml.forEach(actividadXml => {
-      const codfun = actividadXml.querySelector('codfun').textContent;
-      const actividad = actividadXml.querySelector('actividad').textContent;
+      actividadesXml.forEach(actividadXml => {
+        const codfun = actividadXml.querySelector('codfun').textContent;
+        const actividad = actividadXml.querySelector('actividad').textContent;
 
-      // Set default values for other fields if they're not in the XML
-      const estadoactex = actividadXml.querySelector('estadoactex')?.textContent || 'Desactivado'; // Default: Desactivado
+        // Default estadoactex
+        const estadoactex = actividadXml.querySelector('estadoactex')?.textContent || 'Desactivado';
 
-      nuevasActividades.push({
-        codfun,
-        actividad,
-        estadoactex
+        nuevasActividades.push({
+          codfun,
+          actividad,
+          estadoactex
+        });
       });
-    });
 
-    // Update the state with the imported activities
-    setListaActividades(nuevasActividades);
+      setListaActividades(nuevasActividades);
 
-    // Populate the form fields with the first imported activity (if any)
-    if (nuevasActividades.length > 0) {
-      const primeraActividad = nuevasActividades[0];
-      
-      // Find the corresponding function name and set it in the form
-      const funcionEncontrada = listaFunciones.find(f => f.codfunsus === primeraActividad.codfun);
-      if (funcionEncontrada) {
-        setTexto(funcionEncontrada.funsus); // Set the function name
-        setCodigoFuncionSustantiva(primeraActividad.codfun);
-        generarCodigo(funcionEncontrada.funsus); // Generate the code
+      if (nuevasActividades.length > 0) {
+        const primeraActividad = nuevasActividades[0];
+        
+        const funcionEncontrada = listaFunciones.find(f => f.codfunsus === primeraActividad.codfun);
+        if (funcionEncontrada) {
+          setTexto(funcionEncontrada.funsus);
+          setCodigoFuncionSustantiva(primeraActividad.codfun);
+          generarCodigo(funcionEncontrada.funsus);
+        }
+        setAbreviatura(primeraActividad.actividad);
+        setEstado(primeraActividad.estadoactex);
+
+        setAccion('agregar'); 
+        setDisabled(false);
+        setErrores({ texto: '', abreviatura: '', estado: '' });
       }
-      setAbreviatura(primeraActividad.actividad);
-      setEstado(primeraActividad.estadoactex);
 
-      // Set the action to 'agregar' if you want to automatically add the imported activities
-      setAccion('agregar'); 
-      setDisabled(false); // Enable the form fields
+      enqueueSnackbar('XML importado correctamente', { variant: 'success' });
+    };
 
-      // Clear any previous errors
-      setErrores({ texto: '', abreviatura: '', estado: '' });
-    }
-
-    enqueueSnackbar('XML importado correctamente', { variant: 'success' });
+    reader.readAsText(file);
   };
 
-  reader.readAsText(file);
-};
-const handleDeleteAll = async () => {
-  try {
-    await Axios.delete('https://distributivo-backend.onrender.com/acti-delete-all');
-    enqueueSnackbar('Todas las actividades han sido eliminadas', { variant: 'success' });
-    setListaActividades([]);
-  } catch (error) {
-    enqueueSnackbar('Error al eliminar las actividades', { variant: 'error' });
-  }
-};
+  const handleDeleteAll = async () => {
+    try {
+      await Axios.delete('https://distributivo-backend.onrender.com/acti-delete-all');
+      enqueueSnackbar('Todas las actividades han sido eliminadas', { variant: 'success' });
+      setListaActividades([]);
+    } catch (error) {
+      enqueueSnackbar('Error al eliminar las actividades', { variant: 'error' });
+    }
+  };
+
+  // Variable segura para evitar errores si listaActividades no es arreglo
+  const actividadesParaMostrar = Array.isArray(listaActividades) ? listaActividades : [];
 
   return (
     <>
@@ -455,7 +463,6 @@ const handleDeleteAll = async () => {
           helperText={errores.texto || ''}
           disabled
           value={codigoGenerado}
-        
         />
         <TextField
           id='fs1'
@@ -506,124 +513,92 @@ const handleDeleteAll = async () => {
           >
             Nuevo
           </Button>
-          <input
-            accept=".xml"
-            id="import-xml"
-            type="file"
-            style={{ display: 'none' }}
-            onChange={handleImportXml}
-          />
-           <Button
+          <Button
             color="error"
-            startIcon={<DeleteForeverIcon />}
-            onClick={handleDeleteAll}
+            startIcon={<DeleteForeverIcon sx={{ ml: '0.5rem' }} />}
+            onClick={() => handleDeleteAll()}
             sx={{ fontWeight: 'bold' }}
           >
-            Eliminar Todo
+            Eliminar Todos
           </Button>
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
-          <input
-            accept=".xlsx"
-            id="import-xlsx" 
-            type="file"
-            style={{ display: 'none' }}
-            onChange={handleFileUpload}
-          />
-          <label htmlFor="import-xlsx">
-            <Button
-              variant="contained"
-              component="span"
-              color="primary" 
-              startIcon={<UploadFileIcon />}
-            >
-              Importar XLSX
-            </Button>
-          </label>
-        </Box>
-         
         </Box>
       </Box>
-      
-        <Box
-          component="div"
-          width={1000}
-          display="flex"
-          alignItems="center"
-          gap={2}
-          p={2}
-          sx={{ border: '2px solid grey', m: 20, mx: 26, mt: -25 }}
-        >
-          <TableContainer component={Paper} sx={{ margin: '0 auto' }}>
-        <Table sx={{ minWidth: 650 }} aria-label="simple table">
+
+      <TableContainer component={Paper} sx={{ mt: 10, mx: 60, width: 'auto' }}>
+        <Table sx={{ minWidth: 600 }} aria-label="simple table">
           <TableHead>
             <TableRow>
-              <TableCell align="center"><b>N.</b></TableCell>
-              <TableCell align="center"><b>Código</b></TableCell>
-              <TableCell align="center"><b>Actividad</b></TableCell>
-              <TableCell align="center"><b>Estado</b></TableCell>
-              <TableCell align="center"><b>Acciones</b></TableCell>
+              <TableCell align="center" sx={{ fontWeight: 'bold' }}>Código</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 'bold' }}>Actividad</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 'bold' }}>Estado</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {listaActividades.map((actividad, index) => (
-                  <TableRow key={actividad.codacex} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                    <TableCell component="th" scope="row" align="center">{index + 1}</TableCell>
-                    <TableCell align="center">{actividad.codacex}</TableCell>
-                    <TableCell align="center">{actividad.actividad}</TableCell>
-                    <TableCell align="center">{actividad.estadoactex}</TableCell>
-                    <TableCell align="center">
-                      <ButtonGroup variant="contained" aria-label="button group">
-                        <Button
-                          color="success"
-                          startIcon={<UpdateIcon sx={{ ml: '0.5rem' }} />}
-                          onClick={() => editarActividad(actividad)}
-                        />
-                        <Button
-                          color="error"
-                          startIcon={<DeleteForeverIcon sx={{ ml: '0.5rem' }} />}
-                          onClick={() => {
-                            setId(actividad.codacex);
-                            setMensajeSnackbar(`¿Seguro que desea eliminar la actividad "${actividad.actividad}"?`);
-                            setAbrirSnackbar(true);
-                          }}
-                        />
-                      
-                      </ButtonGroup>
-                      
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-      <Snackbar
-        open={abrirSnackbar}
-        autoHideDuration={6000}
-        onClose={() => setAbrirSnackbar(false)}
-        message={mensajeSnackbar}
-        action={
-          <>
-            <Button color="secondary" size="small" onClick={() => setAbrirSnackbar(false)}>
-              Cancelar
-            </Button>
-            <Button
-              color="primary"
-              size="small"
-              onClick={() => {
-                eliminarActividad(id);
-                setAbrirSnackbar(false);
-              }}
-            >
-              Confirmar
-            </Button>
-           
-          </>
-        }
-      />
+            {actividadesParaMostrar.map((actividad, index) => (
+              <TableRow
+                key={actividad.codacex || index}
+                sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+              >
+                <TableCell component="th" scope="row" align="center">{actividad.codacex}</TableCell>
+                <TableCell align="center">{actividad.actividad}</TableCell>
+                <TableCell align="center">{actividad.estadoactex}</TableCell>
+                <TableCell align="center">
+                  <ButtonGroup size="small" aria-label="small button group">
+                    <Button
+                      color="info"
+                      onClick={() => editarActividad(actividad)}
+                      sx={{ fontWeight: 'bold' }}
+                    >
+                      <UpdateIcon />
+                    </Button>
+                    <Button
+                      color="error"
+                      onClick={() => eliminarActividad(actividad.codacex)}
+                      sx={{ fontWeight: 'bold' }}
+                    >
+                      <DeleteForeverIcon />
+                    </Button>
+                  </ButtonGroup>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Box sx={{ mt: 3, mx: 60 }}>
+        <Button
+          variant="contained"
+          component="label"
+          startIcon={<UploadFileIcon />}
+          sx={{ fontWeight: 'bold' }}
+        >
+          Importar Archivo Excel
+          <input
+            type="file"
+            accept=".xlsx, .xls, .csv"
+            hidden
+            onChange={handleFileUpload}
+          />
+        </Button>
+        <Button
+          variant="contained"
+          component="label"
+          startIcon={<UploadFileIcon />}
+          sx={{ ml: 2, fontWeight: 'bold' }}
+        >
+          Importar Archivo XML
+          <input
+            type="file"
+            accept=".xml"
+            hidden
+            onChange={handleImportXml}
+          />
+        </Button>
+      </Box>
     </>
   );
 }
 
 export default Actividades;
-

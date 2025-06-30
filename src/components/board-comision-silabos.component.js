@@ -1,370 +1,1076 @@
-import { useState } from 'react';
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
-import * as XLSX from 'xlsx';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import React, { useState, useEffect } from 'react';
+import Docxtemplater from 'docxtemplater';
+import PizZip from 'pizzip';
+import { saveAs } from 'file-saver';
+import { QRCodeCanvas } from 'qrcode.react';
 
-const SyllabusScheduler = () => {
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [classDetails, setClassDetails] = useState([]);
-  const [currentDetail, setCurrentDetail] = useState({
-    date: null,
-    unidad: '',
-    contenido: '',
-    metodo: '',
-    recursos: '',
-    escenario: '',
-    fuentes: '',
-    horasDocencia: '',
-    horasPractica: '',
-    horasAutonomo: '',
-  });
+// Simulación de base de datos
+const db = {
+  asignaturas: [
+    {
+      id: "MAT101",
+      nombre: "Matemáticas Básicas",
+      codigo: "MAT101",
+      prerrequisito: "Ninguno",
+      correquisito: "Ninguno",
+      facultad: "Ciencias Técnicas",
+      carrera: "Tecnologías de la Información",
+      unidadCurricular: "Formación Básica",
+      ejeFormacion: "Ciencias Básicas",
+      campoFormacion: {
+        amplio: "Ciencias",
+        especifico: "Matemáticas",
+        detallado: "Matemáticas Básicas",
+      },
+      modalidad: "Presencial",
+      periodo: "PI 2025",
+      nivel: "Primer Semestre",
+      totalHoras: "64",
+      horasDocencia: "32",
+      horasPFAE: "16",
+      horasTA: "16",
+      horasPPP: "0",
+      horasHVS: "0",
+      unidades: [
+        {
+          nombre: "UT1",
+          contenidos: "Números reales y operaciones básicas",
+          horasHD: "8",
+          horasPFAE: "4",
+          horasTA: "4",
+          metodologias: "Clase magistral, ejercicios prácticos",
+          recursos: "Pizarra, proyector",
+          escenario: "Presencial",
+          bibliografia: "Stewart, J. (2015). Cálculo.",
+          fecha: "Paralelo A: 01/03/2025",
+        },
+      ],
+      resultados: [
+        {
+          nombre: "UT1",
+          contenidos: "Números reales y operaciones básicas",
+          resultados: "Resolver operaciones con números reales",
+          criterios: "Exactitud en cálculos",
+          instrumentos: "Examen escrito",
+        },
+      ],
+    },
+  ],
+};
 
-  const academicEvents = [
-    { label: "Vacaciones del personal académico", from: "2025-04-01", to: "2025-04-13" },
-    { label: "Trámites para matrícula", from: "2025-04-01", to: "2025-05-05" },
-    { label: "Preparación Seminario Internacional", from: "2025-04-14", to: "2025-04-17" },
-    { label: "Feriado por Viernes Santo", from: "2025-04-18", to: "2025-04-18" },
-    { label: "Seminario Internacional de Trabajo Científico", from: "2025-04-21", to: "2025-04-25" },
-    { label: "Matrículas ordinarias", from: "2025-04-21", to: "2025-05-06" },
-    { label: "Inicio de Clases", from: "2025-05-12", to: "2025-05-12" },
-    { label: "Feriado por Batalla del Pichincha", from: "2025-05-23", to: "2025-05-23" },
-    { label: "Retiro Interno de Asignatura", from: "2025-06-13", to: "2025-06-16" },
-    { label: "Procesamiento de trámites y recepción en Secretaría General", from: "2025-05-06", to: "2025-05-16" },
-    { label: "Seminarios en el campo de conocimiento", from: "2025-04-28", to: "2025-05-01" },
-    { label: "Feriado por Día Internacional del Trabajo", from: "2025-05-02", to: "2025-05-02" },
-    { label: "Preparación y actualización de instrumentos", from: "2025-05-06", to: "2025-05-09" },
-    { label: "Matrículas Extraordinarias", from: "2025-05-06", to: "2025-05-20" },
-    { label: "Inauguración del Periodo Académico", from: "2025-05-12", to: "2025-05-12" },
-    { label: "Proceso de retiro de asignaturas", from: "2025-06-12", to: "2025-06-16" },
-    { label: "Clases normales Parcial", from: "2025-05-12", to: "2025-06-17" },
-    { label: "Socialización de syllabus", from: "2025-05-12", to: "2025-05-17" },
-    { label: "Ingreso en el SGA-UNESUM", from: "2025-05-19", to: "2025-05-22" },
-    { label: "Clases normales Parcial", from: "2025-05-19", to: "2025-06-23" },
-    { label: "Feriado por Batalla del Pichincha", from: "2025-05-24", to: "2025-05-24" },
-    { label: "Clases normales Parcial", from: "2025-05-26", to: "2025-06-31" },
-    { label: "Matrículas Especiales", from: "2025-06-02", to: "2025-06-07" },
-    { label: "Clases normales Parcial", from: "2025-06-09", to: "2025-06-14" },
-    { label: "Proceso de retiro de asignatura", from: "2025-06-13", to: "2025-06-19" },
-  ];
-
-  const syllabusStructure = {
-    unidadesTematicas: [
-      { id: "UT1", contenidos: ["Introducción a la Ciencia", "Métodos Científicos"] },
-      { id: "UT2", contenidos: ["Análisis de Datos", "Estadística Básica"] },
-      { id: "UT3", contenidos: ["Redacción Científica", "Publicación de Resultados"] },
+const Gestionsyllabus = () => {
+  const [formData, setFormData] = useState({
+    codigo: "",
+    nombre: "",
+    prerrequisito: "",
+    correquisito: "",
+    facultad: "",
+    carrera: "",
+    unidadCurricular: "",
+    ejeFormacion: "",
+    campoAmplio: "",
+    campoEspecifico: "",
+    campoDetallado: "",
+    modalidad: "Presencial",
+    periodo: "PI 2025",
+    nivel: "",
+    paralelos: [{ id: "A", horario: "" }],
+    tutorias: "",
+    profesor: "",
+    perfilProfesor: "",
+    totalHoras: "",
+    horasDocencia: "",
+    horasPFAE: "",
+    horasTA: "",
+    horasPPP: "",
+    horasHVS: "",
+    unidades: [
+      {
+        nombre: "UT1",
+        contenidos: "",
+        horasHD: "",
+        horasPFAE: "",
+        horasTA: "",
+        metodologias: "",
+        recursos: "",
+        escenario: "Presencial",
+        bibliografia: "",
+        fecha: "",
+      },
     ],
-    metodos: ["Clase magistral", "Taller práctico", "Estudio de casos", "Discusión grupal"],
-    recursos: ["Proyector", "Pizarra", "Material impreso", "Software estadístico"],
-    escenarios: ["Aula", "Laboratorio", "Biblioteca", "Plataforma virtual"],
-    fuentes: ["Libro: Investigación Científica 101", "Artículo: Métodos Modernos", "Guía: Escritura Académica"],
-  };
+    resultados: [
+      {
+        nombre: "UT1",
+        contenidos: "",
+        resultados: "",
+        criterios: "",
+        instrumentos: "",
+      },
+    ],
+    visado: {
+      decano: "",
+      director: "",
+      coordinador: "",
+      docente: "",
+      fechaDecano: "",
+      fechaDirector: "",
+      fechaCoordinador: "",
+      fechaDocente: "",
+      qrDecano: "",
+      qrDirector: "",
+      qrCoordinador: "",
+      qrDocente: "",
+    },
+    rubricas: [{ criterio: "", puntaje: "", descripcion: "" }],
+  });
+  const [asignaturaSeleccionada, setAsignaturaSeleccionada] = useState("");
+  const [vistaPrevia, setVistaPrevia] = useState(false);
+  const [error, setError] = useState("");
+  const [editando, setEditando] = useState(true); // Añadir esta línea para corregir el error
+  const [documentosGuardados, setDocumentosGuardados] = useState([]);
+  // Cargar documentos guardados
+  useEffect(() => {
+    try {
+      const guardados = JSON.parse(localStorage.getItem("documentosSyllabus") || "[]");
+      setDocumentosGuardados(guardados);
+    } catch (err) {
+      setError("Error al cargar documentos guardados: " + err.message);
+    }
+  }, []);
 
-  const isHighlighted = (date) => {
-    return academicEvents.some((event) => {
-      const from = new Date(event.from);
-      const to = event.to ? new Date(event.to) : from;
-      return date >= from && date <= to;
-    });
-  };
-
-  const handleDateChange = (date) => {
-    setSelectedDate(date);
-    setCurrentDetail({ ...currentDetail, date });
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setCurrentDetail({ ...currentDetail, [name]: value });
-  };
-
-  const handleSave = () => {
-    if (currentDetail.date && currentDetail.unidad && currentDetail.contenido) {
-      setClassDetails([...classDetails, currentDetail]);
-      setCurrentDetail({
-        date: null,
-        unidad: '',
-        contenido: '',
-        metodo: '',
-        recursos: '',
-        escenario: '',
-        fuentes: '',
-        horasDocencia: '',
-        horasPractica: '',
-        horasAutonomo: '',
+  // Cargar datos de asignatura
+  const cargarDatosAsignatura = () => {
+    console.log("Cargando asignatura:", asignaturaSeleccionada);
+    const asignatura = db.asignaturas.find((a) => a.id === asignaturaSeleccionada);
+    if (asignatura) {
+      if (asignatura.codigo !== asignaturaSeleccionada) {
+        setError("El código de la asignatura no coincide.");
+        return;
+      }
+      setFormData({
+        ...formData,
+        ...asignatura,
+        campoAmplio: asignatura.campoFormacion?.amplio || "",
+        campoEspecifico: asignatura.campoFormacion?.especifico || "",
+        campoDetallado: asignatura.campoFormacion?.detallado || "",
+        paralelos: asignatura.paralelos || [{ id: "A", horario: "" }],
+        tutorias: asignatura.tutorias || "",
+        profesor: asignatura.profesor || "",
+        perfilProfesor: asignatura.perfilProfesor || "",
+        unidades: asignatura.unidades || [
+          {
+            nombre: "UT1",
+            contenidos: "",
+            horasHD: "",
+            horasPFAE: "",
+            horasTA: "",
+            metodologias: "",
+            recursos: "",
+            escenario: "Presencial",
+            bibliografia: "",
+            fecha: "",
+          },
+        ],
+        resultados: asignatura.resultados || [
+          {
+            nombre: "UT1",
+            contenidos: "",
+            resultados: "",
+            criterios: "",
+            instrumentos: "",
+          },
+        ],
+        visado: {
+          decano: "",
+          director: "",
+          coordinador: "",
+          docente: "",
+          fechaDecano: "",
+          fechaDirector: "",
+          fechaCoordinador: "",
+          fechaDocente: "",
+          qrDecano: "",
+          qrDirector: "",
+          qrCoordinador: "",
+          qrDocente: "",
+        },
+        rubricas: asignatura.rubricas || [{ criterio: "", puntaje: "", descripcion: "" }],
       });
+      setEditando(true); // Ahora setEditando está definido
+      setError("");
+      setVistaPrevia(false);
+      console.log("Datos cargados:", asignatura);
     } else {
-      alert("Por favor, complete los campos requeridos: fecha, unidad temática y contenido.");
+      setError("Asignatura no encontrada.");
     }
   };
 
-  const exportToExcel = () => {
-    const data = classDetails.map((detail) => ({
-      Fecha: detail.date.toLocaleDateString(),
-      "Unidad Temática": detail.unidad,
-      Contenido: detail.contenido,
-      Método: detail.metodo,
-      "Recursos Didácticos": detail.recursos,
-      "Escenario de Aprendizaje": detail.escenario,
-      "Fuentes de Consulta": detail.fuentes,
-      "Horas Docencia": detail.horasDocencia,
-      "Horas Práctica": detail.horasPractica,
-      "Horas Autónomo": detail.horasAutonomo,
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Planificación");
-    XLSX.writeFile(wb, "Planificacion_Academica_UNESUM.xlsx");
+  // Manejar cambios en los inputs
+  const manejarCambioInput = (e, seccion, indice, campo) => {
+    const updatedFormData = { ...formData };
+    if (seccion === "paralelos") {
+      const paralelosActualizados = [...formData.paralelos];
+      paralelosActualizados[indice] = { ...paralelosActualizados[indice], [campo]: e.target.value };
+      updatedFormData.paralelos = paralelosActualizados;
+    } else if (seccion === "unidades") {
+      const unidadesActualizadas = [...formData.unidades];
+      unidadesActualizadas[indice] = { ...unidadesActualizadas[indice], [campo]: e.target.value };
+      updatedFormData.unidades = unidadesActualizadas;
+      updatedFormData.resultados = unidadesActualizadas.map((u, i) => ({
+        nombre: u.nombre,
+        contenidos: u.contenidos,
+        resultados: formData.resultados[i]?.resultados || "",
+        criterios: formData.resultados[i]?.criterios || "",
+        instrumentos: formData.resultados[i]?.instrumentos || "",
+      }));
+    } else if (seccion === "resultados") {
+      const resultadosActualizados = [...formData.resultados];
+      resultadosActualizados[indice] = { ...resultadosActualizados[indice], [campo]: e.target.value };
+      updatedFormData.resultados = resultadosActualizados;
+    } else if (seccion === "visado") {
+      updatedFormData.visado = { ...formData.visado, [campo]: e.target.value };
+      if (["decano", "director", "coordinador", "docente"].includes(campo)) {
+        updatedFormData.visado[`qr${campo.charAt(0).toUpperCase() + campo.slice(1)}`] = e.target.value
+          ? `Firma de ${campo}: ${e.target.value}, Fecha: ${formData.visado[`fecha${campo.charAt(0).toUpperCase() + campo.slice(1)}`] || "N/A"}`
+          : "";
+      }
+    } else if (seccion === "rubricas") {
+      const rubricasActualizadas = [...formData.rubricas];
+      rubricasActualizadas[indice] = { ...rubricasActualizadas[indice], [campo]: e.target.value };
+      updatedFormData.rubricas = rubricasActualizadas;
+    } else {
+      updatedFormData[campo] = e.target.value;
+    }
+    setFormData(updatedFormData);
   };
 
-  const contenidos = syllabusStructure.unidadesTematicas.find((u) => u.id === currentDetail.unidad)?.contenidos || [];
+  // Agregar nuevo item
+  const agregarItem = (seccion) => {
+    if (seccion === "paralelos") {
+      setFormData({
+        ...formData,
+        paralelos: [...formData.paralelos, { id: String.fromCharCode(65 + formData.paralelos.length), horario: "" }],
+      });
+    } else if (seccion === "unidades") {
+      const nuevaUnidad = {
+        nombre: `UT${formData.unidades.length + 1}`,
+        contenidos: "",
+        horasHD: "",
+        horasPFAE: "",
+        horasTA: "",
+        metodologias: "",
+        recursos: "",
+        escenario: "Presencial",
+        bibliografia: "",
+        fecha: "",
+      };
+      setFormData({
+        ...formData,
+        unidades: [...formData.unidades, nuevaUnidad],
+        resultados: [
+          ...formData.resultados,
+          { nombre: nuevaUnidad.nombre, contenidos: "", resultados: "", criterios: "", instrumentos: "" },
+        ],
+      });
+    } else if (seccion === "rubricas") {
+      setFormData({
+        ...formData,
+        rubricas: [...formData.rubricas, { criterio: "", puntaje: "", descripcion: "" }],
+      });
+    }
+  };
+
+  // Guardar en JSON
+  const guardarJson = () => {
+    try {
+      const json = JSON.stringify(formData, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const nombreArchivo = `syllabus_${formData.codigo || 'sin_codigo'}.json`;
+      saveAs(blob, nombreArchivo);
+      const nuevoDocumento = {
+        id: formData.codigo || 'sin_codigo',
+        nombre: formData.nombre || 'Sin nombre',
+        fecha: new Date().toISOString(),
+        archivo: nombreArchivo,
+      };
+      const updatedDocumentos = [...documentosGuardados, nuevoDocumento];
+      setDocumentosGuardados(updatedDocumentos);
+      localStorage.setItem("documentosSyllabus", JSON.stringify(updatedDocumentos));
+      setError("");
+    } catch (err) {
+      setError("Error al guardar JSON: " + err.message);
+    }
+  };
+
+  // Exportar a Word
+  const exportarAWord = async () => {
+    try {
+      console.log("Iniciando exportación a Word...");
+      const response = await fetch('/template.docx');
+      if (!response.ok) {
+        throw new Error(`No se pudo cargar la plantilla: ${response.statusText}`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      const zip = new PizZip(arrayBuffer);
+      const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+
+      const data = {
+        codigo: formData.codigo || "N/A",
+        nombre: formData.nombre || "N/A",
+        prerrequisito: formData.prerrequisito || "N/A",
+        correquisito: formData.correquisito || "N/A",
+        facultad: formData.facultad || "N/A",
+        carrera: formData.carrera || "N/A",
+        unidadCurricular: formData.unidadCurricular || "N/A",
+        ejeFormacion: formData.ejeFormacion || "N/A",
+        campoAmplio: formData.campoAmplio || "N/A",
+        campoEspecifico: formData.campoEspecifico || "N/A",
+        campoDetallado: formData.campoDetallado || "N/A",
+        modalidad: formData.modalidad || "N/A",
+        periodo: formData.periodo || "N/A",
+        nivel: formData.nivel || "N/A",
+        paralelos: formData.paralelos.length > 0
+          ? formData.paralelos.map((p) => `${p.id}: ${p.horario || "N/A"}`).join('\n')
+          : "N/A",
+        tutorias: formData.tutorias || "N/A",
+        profesor: formData.profesor || "N/A",
+        perfilProfesor: formData.perfilProfesor || "N/A",
+        totalHoras: formData.totalHoras || "N/A",
+        horasDocencia: formData.horasDocencia || "N/A",
+        horasPFAE: formData.horasPFAE || "N/A",
+        horasTA: formData.horasTA || "N/A",
+        horasPPP: formData.horasPPP || "N/A",
+        horasHVS: formData.horasHVS || "N/A",
+        unidades: formData.unidades.map((u) => ({
+          nombre: u.nombre || "N/A",
+          contenidos: u.contenidos || "N/A",
+          horasHD: u.horasHD || "N/A",
+          horasPFAE: u.horasPFAE || "N/A",
+          horasTA: u.horasTA || "N/A",
+          metodologias: u.metodologias || "N/A",
+          recursos: u.recursos || "N/A",
+          escenario: u.escenario || "N/A",
+          bibliografia: u.bibliografia || "N/A",
+          fecha: u.fecha || "N/A",
+        })),
+        resultados: formData.resultados.map((r) => ({
+          nombre: r.nombre || "N/A",
+          contenidos: r.contenidos || "N/A",
+          resultados: r.resultados || "N/A",
+          criterios: r.criterios || "N/A",
+          instrumentos: r.instrumentos || "N/A",
+        })),
+        visado: {
+          decano: formData.visado.decano || "N/A",
+          fechaDecano: formData.visado.fechaDecano || "N/A",
+          qrDecano: formData.visado.qrDecano || "N/A",
+          director: formData.visado.director || "N/A",
+          fechaDirector: formData.visado.fechaDirector || "N/A",
+          qrDirector: formData.visado.qrDirector || "N/A",
+          coordinador: formData.visado.coordinador || "N/A",
+          fechaCoordinador: formData.visado.fechaCoordinador || "N/A",
+          qrCoordinador: formData.visado.qrCoordinador || "N/A",
+          docente: formData.visado.docente || "N/A",
+          fechaDocente: formData.visado.fechaDocente || "N/A",
+          qrDocente: formData.visado.qrDocente || "N/A",
+        },
+        rubricas: formData.rubricas.map((r) => ({
+          criterio: r.criterio || "N/A",
+          puntaje: r.puntaje || "N/A",
+          descripcion: r.descripcion || "N/A",
+        })),
+      };
+
+      console.log("Datos para la plantilla:", data);
+      doc.setData(data);
+      doc.render();
+      const out = doc.getZip().generate({
+        type: "blob",
+        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+      const nombreArchivo = `syllabus_${formData.codigo || 'sin_codigo'}_${Date.now()}.docx`;
+      saveAs(out, nombreArchivo);
+      const nuevoDocumento = {
+        id: formData.codigo || 'sin_codigo',
+        nombre: formData.nombre || 'Sin nombre',
+        fecha: new Date().toISOString(),
+        archivo: nombreArchivo,
+      };
+      const updatedDocumentos = [...documentosGuardados, nuevoDocumento];
+      setDocumentosGuardados(updatedDocumentos);
+      localStorage.setItem("documentosSyllabus", JSON.stringify(updatedDocumentos));
+      setError("");
+      console.log("Documento exportado con éxito:", nombreArchivo);
+    } catch (err) {
+      console.error("Error al exportar a Word:", err);
+      setError(`Error al exportar el documento: ${err.message}`);
+    }
+  };
+
+  // Alternar vista previa
+  const alternarVistaPrevia = () => {
+    console.log("Cambiando vistaPrevia a:", !vistaPrevia);
+    setVistaPrevia(!vistaPrevia);
+    setError("");
+  };
 
   return (
-    <div className="container my-5">
-      {/* Header */}
-      <div className="text-center mb-5">
-        <h1 className="display-5 fw-bold">Planificador de Sílabos UNESUM</h1>
-        <p className="text-muted">Universidad Estatal del Sur de Manabí - Periodo Académico PI 2025</p>
+    <div className="p-6 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Gestión de Syllabus</h1>
+
+      {/* Selección de asignatura */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium">Seleccione Asignatura:</label>
+        <select
+          value={asignaturaSeleccionada}
+          onChange={(e) => setAsignaturaSeleccionada(e.target.value)}
+          className="mt-1 block w-full border rounded p-2"
+        >
+          <option value="">Seleccione...</option>
+          {db.asignaturas.map((asignatura) => (
+            <option key={asignatura.id} value={asignatura.id}>
+              {asignatura.nombre}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={cargarDatosAsignatura}
+          className="mt-2 bg-blue-500 text-white px-4 py-2 rounded"
+          disabled={!asignaturaSeleccionada}
+        >
+          Cargar Datos
+        </button>
       </div>
 
-      <div className="row">
-        {/* Calendar Section */}
-        <div className="col-md-4 mb-4">
-          <div className="card shadow-sm">
-            <div className="card-body">
-              <h2 className="card-title h5 fw-bold mb-3">Calendario Académico</h2>
-              <Calendar
-                onChange={handleDateChange}
-                value={selectedDate}
-                tileClassName={({ date }) => (isHighlighted(date) ? 'bg-warning rounded-circle' : null)}
-                className="border-0 w-100"
-              />
-              <p className="mt-3">Fecha seleccionada: <strong>{selectedDate.toLocaleDateString()}</strong></p>
-              <hr />
-              <h3 className="h6 fw-bold">Eventos Académicos</h3>
-              <ul className="list-group list-group-flush">
-                {academicEvents.map((event, idx) => (
-                  <li key={idx} className="list-group-item small">
-                    {event.label}: {event.from} {event.to && ` - ${event.to}`}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+      {/* Documentos guardados */}
+      {documentosGuardados.length > 0 && (
+        <div className="mb-4">
+          <h2 className="text-xl font-semibold mb-2">Documentos Guardados</h2>
+          <ul className="border p-2 rounded">
+            {documentosGuardados.map((doc, index) => (
+              <li key={index} className="mb-2">
+                {doc.nombre} ({doc.id}) - {new Date(doc.fecha).toLocaleString()} -{' '}
+                <a href={`/${doc.archivo}`} download className="text-blue-500">
+                  Descargar
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
+      )}
 
-        {/* Class Form Section */}
-        <div className="col-md-8 mb-4">
-          <div className="card shadow-sm">
-            <div className="card-body">
-              <h2 className="card-title h5 fw-bold mb-3">Programar Clase</h2>
-              <div className="row g-3">
-                <div className="col-md-6">
-                  <label htmlFor="unidad" className="form-label small fw-bold">Unidad Temática</label>
-                  <select
-                    id="unidad"
-                    name="unidad"
-                    value={currentDetail.unidad}
-                    onChange={handleChange}
-                    className="form-select"
-                  >
-                    <option value="">Seleccione</option>
-                    {syllabusStructure.unidadesTematicas.map((ut) => (
-                      <option key={ut.id} value={ut.id}>{ut.id}</option>
-                    ))}
-                  </select>
-                </div>
+      {error && <div className="text-red-500 mb-4">{error}</div>}
 
-                <div className="col-md-6">
-                  <label htmlFor="contenido" className="form-label small fw-bold">Contenido</label>
-                  <select
-                    id="contenido"
-                    name="contenido"
-                    value={currentDetail.contenido}
-                    onChange={handleChange}
-                    className="form-select"
-                  >
-                    <option value="">Seleccione</option>
-                    {contenidos.map((c, idx) => (
-                      <option key={idx} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="col-md-6">
-                  <label htmlFor="metodo" className="form-label small fw-bold">Método de Enseñanza</label>
-                  <select
-                    id="metodo"
-                    name="metodo"
-                    value={currentDetail.metodo}
-                    onChange={handleChange}
-                    className="form-select"
-                  >
-                    <option value="">Seleccione</option>
-                    {syllabusStructure.metodos.map((m, idx) => (
-                      <option key={idx} value={m}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="col-md-6">
-                  <label htmlFor="recursos" className="form-label small fw-bold">Recursos Didácticos</label>
-                  <select
-                    id="recursos"
-                    name="recursos"
-                    value={currentDetail.recursos}
-                    onChange={handleChange}
-                    className="form-select"
-                  >
-                    <option value="">Seleccione</option>
-                    {syllabusStructure.recursos.map((r, idx) => (
-                      <option key={idx} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="col-md-6">
-                  <label htmlFor="escenario" className="form-label small fw-bold">Escenario de Aprendizaje</label>
-                  <select
-                    id="escenario"
-                    name="escenario"
-                    value={currentDetail.escenario}
-                    onChange={handleChange}
-                    className="form-select"
-                  >
-                    <option value="">Seleccione</option>
-                    {syllabusStructure.escenarios.map((e, idx) => (
-                      <option key={idx} value={e}>{e}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="col-md-6">
-                  <label htmlFor="fuentes" className="form-label small fw-bold">Fuentes de Consulta</label>
-                  <select
-                    id="fuentes"
-                    name="fuentes"
-                    value={currentDetail.fuentes}
-                    onChange={handleChange}
-                    className="form-select"
-                  >
-                    <option value="">Seleccione</option>
-                    {syllabusStructure.fuentes.map((f, idx) => (
-                      <option key={idx} value={f}>{f}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="col-md-4">
-                  <label htmlFor="horasDocencia" className="form-label small fw-bold">Horas Docencia</label>
-                  <input
-                    type="number"
-                    id="horasDocencia"
-                    name="horasDocencia"
-                    value={currentDetail.horasDocencia}
-                    onChange={handleChange}
-                    className="form-control"
-                    placeholder="Ej. 2"
-                  />
-                </div>
-
-                <div className="col-md-4">
-                  <label htmlFor="horasPractica" className="form-label small fw-bold">Horas Práctica</label>
-                  <input
-                    type="number"
-                    id="horasPractica"
-                    name="horasPractica"
-                    value={currentDetail.horasPractica}
-                    onChange={handleChange}
-                    className="form-control"
-                    placeholder="Ej. 1"
-                  />
-                </div>
-
-                <div className="col-md-4">
-                  <label htmlFor="horasAutonomo" className="form-label small fw-bold">Horas Autónomo</label>
-                  <input
-                    type="number"
-                    id="horasAutonomo"
-                    name="horasAutonomo"
-                    value={currentDetail.horasAutonomo}
-                    onChange={handleChange}
-                    className="form-control"
-                    placeholder="Ej. 3"
-                  />
-                </div>
-              </div>
-
-              <button
-                onClick={handleSave}
-                className="btn btn-primary mt-4"
+      {asignaturaSeleccionada && !error && (
+        <>
+          {/* Formulario */}
+          <div className={vistaPrevia ? "hidden" : "block"}>
+            <h2 className="text-xl font-semibold mb-2">1. Datos Generales</h2>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <input
+                type="text"
+                placeholder="Código de Asignatura"
+                value={formData.codigo}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <input
+                type="text"
+                placeholder="Nombre de la Asignatura"
+                value={formData.nombre}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <input
+                type="text"
+                placeholder="Prerrequisito"
+                value={formData.prerrequisito}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <input
+                type="text"
+                placeholder="Correquisito"
+                value={formData.correquisito}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <input
+                type="text"
+                placeholder="Facultad"
+                value={formData.facultad}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <input
+                type="text"
+                placeholder="Carrera"
+                value={formData.carrera}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <input
+                type="text"
+                placeholder="Unidad Curricular"
+                value={formData.unidadCurricular}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <input
+                type="text"
+                placeholder="Eje de Formación"
+                value={formData.ejeFormacion}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <input
+                type="text"
+                placeholder="Campo Amplio"
+                value={formData.campoAmplio}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <input
+                type="text"
+                placeholder="Campo Específico"
+                value={formData.campoEspecifico}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <input
+                type="text"
+                placeholder="Campo Detallado"
+                value={formData.campoDetallado}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <select
+                value={formData.modalidad}
+                onChange={(e) => manejarCambioInput(e, null, null, "modalidad")}
+                className="border p-2 rounded"
               >
-                Guardar Clase
+                <option value="Presencial">Presencial</option>
+                <option value="Semipresencial">Semipresencial</option>
+                <option value="En línea">En línea</option>
+              </select>
+              <select
+                value={formData.periodo}
+                onChange={(e) => manejarCambioInput(e, null, null, "periodo")}
+                className="border p-2 rounded"
+              >
+                <option value="PI 2025">PI 2025</option>
+                <option value="PII 2025">PII 2025</option>
+              </select>
+              <input
+                type="text"
+                placeholder="Nivel"
+                value={formData.nivel}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <input
+                type="text"
+                placeholder="Tutorías"
+                value={formData.tutorias}
+                onChange={(e) => manejarCambioInput(e, null, null, "tutorias")}
+                className="border p-2 rounded"
+              />
+              <input
+                type="text"
+                placeholder="Profesor"
+                value={formData.profesor}
+                onChange={(e) => manejarCambioInput(e, null, null, "profesor")}
+                className="border p-2 rounded"
+              />
+              <input
+                type="text"
+                placeholder="Perfil del Profesor"
+                value={formData.perfilProfesor}
+                onChange={(e) => manejarCambioInput(e, null, null, "perfilProfesor")}
+                className="border p-2 rounded"
+              />
+              <input
+                type="text"
+                placeholder="Total Horas/Créditos"
+                value={formData.totalHoras}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <input
+                type="text"
+                placeholder="Horas Docencia"
+                value={formData.horasDocencia}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <input
+                type="text"
+                placeholder="Horas PFAE"
+                value={formData.horasPFAE}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <input
+                type="text"
+                placeholder="Horas TA"
+                value={formData.horasTA}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <input
+                type="text"
+                placeholder="Horas PPP"
+                value={formData.horasPPP}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+              <input
+                type="text"
+                placeholder="Horas HVS"
+                value={formData.horasHVS}
+                readOnly
+                className="border p-2 rounded bg-gray-100"
+              />
+            </div>
+
+            <h2 className="text-xl font-semibold mb-2">Paralelos</h2>
+            {formData.paralelos.map((paralelo, index) => (
+              <div key={index} className="flex gap-4 mb-2">
+                <input
+                  type="text"
+                  placeholder="Paralelo"
+                  value={paralelo.id}
+                  onChange={(e) => manejarCambioInput(e, "paralelos", index, "id")}
+                  className="border p-2 rounded w-1/4"
+                />
+                <input
+                  type="text"
+                  placeholder="Horario"
+                  value={paralelo.horario}
+                  onChange={(e) => manejarCambioInput(e, "paralelos", index, "horario")}
+                  className="border p-2 rounded w-3/4"
+                />
+              </div>
+            ))}
+            <button onClick={() => agregarItem("paralelos")} className="bg-green-500 text-white px-4 py-2 rounded mb-4">
+              Agregar Paralelo
+            </button>
+
+            <h2 className="text-xl font-semibold mb-2">2. Estructura de la Asignatura</h2>
+            {formData.unidades.map((unidad, index) => (
+              <div key={index} className="mb-4 border p-4 rounded">
+                <input
+                  type="text"
+                  placeholder="Unidad Temática"
+                  value={unidad.nombre}
+                  onChange={(e) => manejarCambioInput(e, "unidades", index, "nombre")}
+                  className="border p-2 rounded w-full mb-2"
+                />
+                <textarea
+                  placeholder="Contenidos"
+                  value={unidad.contenidos}
+                  onChange={(e) => manejarCambioInput(e, "unidades", index, "contenidos")}
+                  className="border p-2 rounded w-full mb-2"
+                />
+                <input
+                  type="text"
+                  placeholder="Horas HD"
+                  value={unidad.horasHD}
+                  onChange={(e) => manejarCambioInput(e, "unidades", index, "horasHD")}
+                  className="border p-2 rounded w-full mb-2"
+                />
+                <input
+                  type="text"
+                  placeholder="Horas PFAE"
+                  value={unidad.horasPFAE}
+                  onChange={(e) => manejarCambioInput(e, "unidades", index, "horasPFAE")}
+                  className="border p-2 rounded w-full mb-2"
+                />
+                <input
+                  type="text"
+                  placeholder="Horas TA"
+                  value={unidad.horasTA}
+                  onChange={(e) => manejarCambioInput(e, "unidades", index, "horasTA")}
+                  className="border p-2 rounded w-full mb-2"
+                />
+                <textarea
+                  placeholder="Metodologías"
+                  value={unidad.metodologias}
+                  onChange={(e) => manejarCambioInput(e, "unidades", index, "metodologias")}
+                  className="border p-2 rounded w-full mb-2"
+                />
+                <textarea
+                  placeholder="Recursos Didácticos"
+                  value={unidad.recursos}
+                  onChange={(e) => manejarCambioInput(e, "unidades", index, "recursos")}
+                  className="border p-2 rounded w-full mb-2"
+                />
+                <select
+                  value={unidad.escenario}
+                  onChange={(e) => manejarCambioInput(e, "unidades", index, "escenario")}
+                  className="border p-2 rounded w-full mb-2"
+                >
+                  <option value="Presencial">Presencial</option>
+                  <option value="Virtual">Virtual</option>
+                  <option value="Real">Real</option>
+                </select>
+                <textarea
+                  placeholder="Bibliografía"
+                  value={unidad.bibliografia}
+                  onChange={(e) => manejarCambioInput(e, "unidades", index, "bibliografia")}
+                  className="border p-2 rounded w-full mb-2"
+                />
+                <input
+                  type="text"
+                  placeholder="Fecha/Paralelo"
+                  value={unidad.fecha}
+                  onChange={(e) => manejarCambioInput(e, "unidades", index, "fecha")}
+                  className="border p-2 rounded w-full mb-2"
+                />
+              </div>
+            ))}
+            <button onClick={() => agregarItem("unidades")} className="bg-green-500 text-white px-4 py-2 rounded mb-4">
+              Agregar Unidad
+            </button>
+
+            <h2 className="text-xl font-semibold mb-2">3. Resultados y Evaluación</h2>
+            {formData.resultados.map((resultado, index) => (
+              <div key={index} className="mb-4 border p-4 rounded">
+                <input
+                  type="text"
+                  placeholder="Unidad Temática"
+                  value={resultado.nombre}
+                  readOnly
+                  className="border p-2 rounded w-full mb-2 bg-gray-100"
+                />
+                <textarea
+                  placeholder="Contenidos"
+                  value={resultado.contenidos}
+                  readOnly
+                  className="border p-2 rounded w-full mb-2 bg-gray-100"
+                />
+                <textarea
+                  placeholder="Resultados de Aprendizaje"
+                  value={resultado.resultados}
+                  onChange={(e) => manejarCambioInput(e, "resultados", index, "resultados")}
+                  className="border p-2 rounded w-full mb-2"
+                />
+                <textarea
+                  placeholder="Criterios de Evaluación"
+                  value={resultado.criterios}
+                  onChange={(e) => manejarCambioInput(e, "resultados", index, "criterios")}
+                  className="border p-2 rounded w-full mb-2"
+                />
+                <textarea
+                  placeholder="Instrumentos de Evaluación"
+                  value={resultado.instrumentos}
+                  onChange={(e) => manejarCambioInput(e, "resultados", index, "instrumentos")}
+                  className="border p-2 rounded w-full mb-2"
+                />
+              </div>
+            ))}
+
+            <h2 className="text-xl font-semibold mb-2">4. Rúbricas de Calificaciones</h2>
+            {formData.rubricas.map((rubrica, index) => (
+              <div key={index} className="mb-4 border p-4 rounded">
+                <input
+                  type="text"
+                  placeholder="Criterio"
+                  value={rubrica.criterio}
+                  onChange={(e) => manejarCambioInput(e, "rubricas", index, "criterio")}
+                  className="border p-2 rounded w-full mb-2"
+                />
+                <input
+                  type="text"
+                  placeholder="Puntaje"
+                  value={rubrica.puntaje}
+                  onChange={(e) => manejarCambioInput(e, "rubricas", index, "puntaje")}
+                  className="border p-2 rounded w-full mb-2"
+                />
+                <textarea
+                  placeholder="Descripción"
+                  value={rubrica.descripcion}
+                  onChange={(e) => manejarCambioInput(e, "rubricas", index, "descripcion")}
+                  className="border p-2 rounded w-full mb-2"
+                />
+              </div>
+            ))}
+            <button onClick={() => agregarItem("rubricas")} className="bg-green-500 text-white px-4 py-2 rounded mb-4">
+              Agregar Rúbrica
+            </button>
+
+            <h2 className="text-xl font-semibold mb-2">5. Visado</h2>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <input
+                  type="text"
+                  placeholder="Decano/a"
+                  value={formData.visado.decano}
+                  onChange={(e) => manejarCambioInput(e, "visado", null, "decano")}
+                  className="border p-2 rounded w-full"
+                />
+                {formData.visado.qrDecano && (
+                  <QRCodeCanvas value={formData.visado.qrDecano} size={100} className="mt-2" />
+                )}
+              </div>
+              <input
+                type="text"
+                placeholder="Fecha Decano"
+                value={formData.visado.fechaDecano}
+                onChange={(e) => manejarCambioInput(e, "visado", null, "fechaDecano")}
+                className="border p-2 rounded"
+              />
+              <div>
+                <input
+                  type="text"
+                  placeholder="Director/a Académico/a"
+                  value={formData.visado.director}
+                  onChange={(e) => manejarCambioInput(e, "visado", null, "director")}
+                  className="border p-2 rounded w-full"
+                />
+                {formData.visado.qrDirector && (
+                  <QRCodeCanvas value={formData.visado.qrDirector} size={100} className="mt-2" />
+                )}
+              </div>
+              <input
+                type="text"
+                placeholder="Fecha Director"
+                value={formData.visado.fechaDirector}
+                onChange={(e) => manejarCambioInput(e, "visado", null, "fechaDirector")}
+                className="border p-2 rounded"
+              />
+              <div>
+                <input
+                  type="text"
+                  placeholder="Coordinador/a de Carrera"
+                  value={formData.visado.coordinador}
+                  onChange={(e) => manejarCambioInput(e, "visado", null, "coordinador")}
+                  className="border p-2 rounded w-full"
+                />
+                {formData.visado.qrCoordinador && (
+                  <QRCodeCanvas value={formData.visado.qrCoordinador} size={100} className="mt-2" />
+                )}
+              </div>
+              <input
+                type="text"
+                placeholder="Fecha Coordinador"
+                value={formData.visado.fechaCoordinador}
+                onChange={(e) => manejarCambioInput(e, "visado", null, "fechaCoordinador")}
+                className="border p-2 rounded"
+              />
+              <div>
+                <input
+                  type="text"
+                  placeholder="Docente"
+                  value={formData.visado.docente}
+                  onChange={(e) => manejarCambioInput(e, "visado", null, "docente")}
+                  className="border p-2 rounded w-full"
+                />
+                {formData.visado.qrDocente && (
+                  <QRCodeCanvas value={formData.visado.qrDocente} size={100} className="mt-2" />
+                )}
+              </div>
+              <input
+                type="text"
+                placeholder="Fecha Docente"
+                value={formData.visado.fechaDocente}
+                onChange={(e) => manejarCambioInput(e, "visado", null, "fechaDocente")}
+                className="border p-2 rounded"
+              />
+            </div>
+
+            <div className="flex gap-4">
+              <button onClick={guardarJson} className="bg-blue-500 text-white px-4 py-2 rounded">
+                Guardar como JSON
+              </button>
+              <button onClick={exportarAWord} className="bg-blue-500 text-white px-4 py-2 rounded">
+                Exportar a Word
+              </button>
+              <button onClick={alternarVistaPrevia} className="bg-gray-500 text-white px-4 py-2 rounded">
+                {vistaPrevia ? "Volver a Editar" : "Vista Previa"}
               </button>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Scheduled Classes Section */}
-      <div className="mt-5">
-        <h2 className="h5 fw-bold mb-3">Clases Programadas</h2>
-        {classDetails.length > 0 ? (
-          <>
-            <div className="table-responsive">
-              <table className="table table-bordered table-striped">
-                <thead className="table-light">
+          {/* Vista Previa */}
+          {vistaPrevia && (
+            <div className="border p-4 rounded">
+              <h2 className="text-xl font-bold mb-2">SYLLABUS</h2>
+              <h3 className="text-lg font-semibold">1. Datos Generales y Específicos</h3>
+              <p><strong>Código de Asignatura:</strong> {formData.codigo || "N/A"}</p>
+              <p><strong>Nombre de la Asignatura:</strong> {formData.nombre || "N/A"}</p>
+              <p><strong>Prerrequisito:</strong> {formData.prerrequisito || "N/A"}</p>
+              <p><strong>Correquisito:</strong> {formData.correquisito || "N/A"}</p>
+              <p><strong>Facultad:</strong> {formData.facultad || "N/A"}</p>
+              <p><strong>Carrera:</strong> {formData.carrera || "N/A"}</p>
+              <p><strong>Unidad Curricular:</strong> {formData.unidadCurricular || "N/A"}</p>
+              <p><strong>Eje de Formación:</strong> {formData.ejeFormacion || "N/A"}</p>
+              <p>
+                <strong>Campo de Formación:</strong> Amplio: {formData.campoAmplio || "N/A"}, Específico: {formData.campoEspecifico || "N/A"}, Detallado: {formData.campoDetallado || "N/A"}
+              </p>
+              <p><strong>Modalidad:</strong> {formData.modalidad || "N/A"}</p>
+              <p><strong>Periodo Académico:</strong> {formData.periodo || "N/A"}</p>
+              <p><strong>Nivel:</strong> {formData.nivel || "N/A"}</p>
+              <p><strong>Paralelos:</strong> {formData.paralelos.length > 0 ? formData.paralelos.map((p) => `${p.id}: ${p.horario || "N/A"}`).join(', ') : "N/A"}</p>
+              <p><strong>Tutorías:</strong> {formData.tutorias || "N/A"}</p>
+              <p><strong>Profesor:</strong> {formData.profesor || "N/A"}</p>
+              <p><strong>Perfil del Profesor:</strong> {formData.perfilProfesor || "N/A"}</p>
+              <p><strong>Total Horas/Créditos:</strong> {formData.totalHoras || "N/A"}</p>
+              <p><strong>Horas Docencia:</strong> {formData.horasDocencia || "N/A"}</p>
+              <p><strong>Horas PFAE:</strong> {formData.horasPFAE || "N/A"}</p>
+              <p><strong>Horas TA:</strong> {formData.horasTA || "N/A"}</p>
+              <p><strong>Horas PPP:</strong> {formData.horasPPP || "N/A"}</p>
+              <p><strong>Horas HVS:</strong> {formData.horasHVS || "N/A"}</p>
+
+              <h3 className="text-lg font-semibold mt-4">2. Estructura de la Asignatura</h3>
+              <table className="w-full border-collapse border">
+                <thead>
                   <tr>
-                    <th>Fecha</th>
-                    <th>Unidad</th>
-                    <th>Contenido</th>
-                    <th>Método</th>
-                    <th>Recursos</th>
-                    <th>Escenario</th>
-                    <th>Fuentes</th>
-                    <th>Horas Docencia</th>
-                    <th>Horas Práctica</th>
-                    <th>Horas Autónomo</th>
+                    <th className="border p-2">Unidades Temáticas</th>
+                    <th className="border p-2">Contenidos</th>
+                    <th className="border p-2">Horas HD</th>
+                    <th className="border p-2">Horas PFAE</th>
+                    <th className="border p-2">Horas TA</th>
+                    <th className="border p-2">Metodologías</th>
+                    <th className="border p-2">Recursos</th>
+                    <th className="border p-2">Escenario</th>
+                    <th className="border p-2">Bibliografía</th>
+                    <th className="border p-2">Fecha/Paralelo</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {classDetails.map((clase, idx) => (
-                    <tr key={idx}>
-                      <td>{clase.date.toLocaleDateString()}</td>
-                      <td>{clase.unidad}</td>
-                      <td>{clase.contenido}</td>
-                      <td>{clase.metodo}</td>
-                      <td>{clase.recursos}</td>
-                      <td>{clase.escenario}</td>
-                      <td>{clase.fuentes}</td>
-                      <td>{clase.horasDocencia}</td>
-                      <td>{clase.horasPractica}</td>
-                      <td>{clase.horasAutonomo}</td>
+                  {formData.unidades.map((unidad, index) => (
+                    <tr key={index}>
+                      <td className="border p-2">{unidad.nombre || "N/A"}</td>
+                      <td className="border p-2">{unidad.contenidos || "N/A"}</td>
+                      <td className="border p-2">{unidad.horasHD || "N/A"}</td>
+                      <td className="border p-2">{unidad.horasPFAE || "N/A"}</td>
+                      <td className="border p-2">{unidad.horasTA || "N/A"}</td>
+                      <td className="border p-2">{unidad.metodologias || "N/A"}</td>
+                      <td className="border p-2">{unidad.recursos || "N/A"}</td>
+                      <td className="border p-2">{unidad.escenario || "N/A"}</td>
+                      <td className="border p-2">{unidad.bibliografia || "N/A"}</td>
+                      <td className="border p-2">{unidad.fecha || "N/A"}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+
+              <h3 className="text-lg font-semibold mt-4">3. Resultados y Evaluación</h3>
+              <table className="w-full border-collapse border">
+                <thead>
+                  <tr>
+                    <th className="border p-2">Unidades Temáticas</th>
+                    <th className="border p-2">Contenidos</th>
+                    <th className="border p-2">Resultados de Aprendizaje</th>
+                    <th className="border p-2">Criterios de Evaluación</th>
+                    <th className="border p-2">Instrumentos de Evaluación</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {formData.resultados.map((resultado, index) => (
+                    <tr key={index}>
+                      <td className="border p-2">{resultado.nombre || "N/A"}</td>
+                      <td className="border p-2">{resultado.contenidos || "N/A"}</td>
+                      <td className="border p-2">{resultado.resultados || "N/A"}</td>
+                      <td className="border p-2">{resultado.criterios || "N/A"}</td>
+                      <td className="border p-2">{resultado.instrumentos || "N/A"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <h3 className="text-lg font-semibold mt-4">4. Rúbricas de Calificaciones</h3>
+              <table className="w-full border-collapse border">
+                <thead>
+                  <tr>
+                    <th className="border p-2">Criterio</th>
+                    <th className="border p-2">Puntaje</th>
+                    <th className="border p-2">Descripción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {formData.rubricas.map((rubrica, index) => (
+                    <tr key={index}>
+                      <td className="border p-2">{rubrica.criterio || "N/A"}</td>
+                      <td className="border p-2">{rubrica.puntaje || "N/A"}</td>
+                      <td className="border p-2">{rubrica.descripcion || "N/A"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <h3 className="text-lg font-semibold mt-4">5. Visado</h3>
+              <table className="w-full border-collapse border">
+                <thead>
+                  <tr>
+                    <th className="border p-2">Decano/a</th>
+                    <th className="border p-2">Director/a Académico/a</th>
+                    <th className="border p-2">Coordinador/a de Carrera</th>
+                    <th className="border p-2">Docente</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="border p-2">
+                      {formData.visado.decano || "N/A"}
+                      <br />
+                      Fecha: {formData.visado.fechaDecano || "N/A"}
+                      <br />
+                      {formData.visado.qrDecano && <QRCodeCanvas value={formData.visado.qrDecano} size={100} />}
+                    </td>
+                    <td className="border p-2">
+                      {formData.visado.director || "N/A"}
+                      <br />
+                      Fecha: {formData.visado.fechaDirector || "N/A"}
+                      <br />
+                      {formData.visado.qrDirector && <QRCodeCanvas value={formData.visado.qrDirector} size={100} />}
+                    </td>
+                    <td className="border p-2">
+                      {formData.visado.coordinador || "N/A"}
+                      <br />
+                      Fecha: {formData.visado.fechaCoordinador || "N/A"}
+                      <br />
+                      {formData.visado.qrCoordinador && <QRCodeCanvas value={formData.visado.qrCoordinador} size={100} />}
+                    </td>
+                    <td className="border p-2">
+                      {formData.visado.docente || "N/A"}
+                      <br />
+                      Fecha: {formData.visado.fechaDocente || "N/A"}
+                      <br />
+                      {formData.visado.qrDocente && <QRCodeCanvas value={formData.visado.qrDocente} size={100} />}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <button onClick={alternarVistaPrevia} className="bg-gray-500 text-white px-4 py-2 rounded mt-4">
+                Volver a Editar
+              </button>
             </div>
-            <button
-              onClick={exportToExcel}
-              className="btn btn-success mt-3"
-            >
-              Exportar a Excel
-            </button>
-          </>
-        ) : (
-          <p className="text-muted">No hay clases programadas aún.</p>
-        )}
-      </div>
+          )}
+        </>
+      )}
     </div>
   );
 };
 
-export default SyllabusScheduler;
+export default Gestionsyllabus;
 
 
 
+//Verificar nombre de asignatura, y si coincide se sube y si no muestre errror o un mensaje//
+//syllabus tiene el codigo de asignatura//
+
+//Rango/unidad//
+
+//cargar desde archivo EXCEL Y para imprimir pdf// 
+
+
+
+
+
+//despues//
 //direccion academica envia a vicerector y vicerector epueba y se sube//
 //comunicacion entre ambos a traves de comentarios//
 //comentario donde quiera el rector//

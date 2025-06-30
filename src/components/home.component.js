@@ -1,5 +1,6 @@
 import React from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import gestion from "./unesum.png";
 
 const Home = () => {
   return (
@@ -17,7 +18,7 @@ const Home = () => {
       <div id="carouselExampleIndicators" className="carousel slide mt-4 container" data-bs-ride="carousel">
         <div className="carousel-inner rounded shadow">
           <div className="carousel-item active">
-            <img src="./descarga (1).jpeg" className="d-block w-100" alt="Gestión Académica" />
+            <img src={gestion} className="d-block w-100" alt="Gestión Académica" />
           </div>
           <div className="carousel-item">
             <img src="./imagen2.jpeg" className="d-block w-100" alt="Mallas Curriculares" />

@@ -1,0 +1,51 @@
+/* Estilo general */
+body, .light-mode {
+    background-color: #f8f9fa;
+    color: #212529;
+  }
+  
+  .dark-mode {
+    background-color: #121212;
+    color: #f1f1f1;
+  }
+  
+  /* Glass effect */
+  .glass-card,
+  .glass-container,
+  .glass-footer {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+  }
+  
+  /* Hero */
+  .hero-section {
+    padding: 5rem 0;
+    background: linear-gradient(to right, #00B894, #A3CB38);
+  }
+  
+  /* Hover efecto */
+  .glass-card {
+    padding: 1.5rem;
+    transition: transform 0.3s ease;
+  }
+  
+  .glass-card:hover {
+    transform: translateY(-8px);
+  }
+  
+  /* Footer */
+  .glass-footer {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(5px);
+  }
+  
+  /* Botón */
+  .btn-outline-light {
+    border: 2px solid #fff;
+    font-weight: bold;
+  }
+  

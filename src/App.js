@@ -22,7 +22,10 @@ import BoardCoordinador from "./components/board-coordinador.component";
 import BoardSecretaria from "./components/board-secretaria.component";
 import BoardDecano from "./components/board-decano.component";
 import BoardComisionSilabos from "./components/board-comision-silabos.component";
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 
+import login from "./assets/imagen.jpeg";
 // Importa la imagen
 import logo from "./unesum.jpeg";
 
@@ -62,7 +65,10 @@ class App extends Component {
         showComisionSilabosBoard: user.roles.includes("ROLE_COMISION_SILABOS"),
       });
     }
-
+    AOS.init({
+      duration: 1000,
+      once: true
+    });
     EventBus.on("logout", this.logOut);
   }
 
@@ -190,6 +196,8 @@ class App extends Component {
           </footer>
         </div>
       </div>
+
+      
     );
   }
 }
