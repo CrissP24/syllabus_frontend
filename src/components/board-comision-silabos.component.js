@@ -126,8 +126,9 @@ const Gestionsyllabus = () => {
   const [asignaturaSeleccionada, setAsignaturaSeleccionada] = useState("");
   const [vistaPrevia, setVistaPrevia] = useState(false);
   const [error, setError] = useState("");
-  const [editando, setEditando] = useState(true); // Añadir esta línea para corregir el error
+  const [editando, setEditando] = useState(false); // Añadido para corregir el error 'setEditando is not defined'
   const [documentosGuardados, setDocumentosGuardados] = useState([]);
+
   // Cargar documentos guardados
   useEffect(() => {
     try {

@@ -4,11 +4,12 @@ import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, Tex
 import { saveAs } from 'file-saver';
 import QRCode from 'qrcode';
 import mammoth from 'mammoth';
+import './css/BoardDocente.css';
 
 const BoardDocente = () => {
   const subjectsDB = [
     "Fundamentos de Programación",
-    "",
+    "Programación II",
     "Bases de Datos",
     "Programación Avanzada",
   ];
@@ -34,6 +35,7 @@ const BoardDocente = () => {
   };
 
   const [selectedSubject, setSelectedSubject] = useState("");
+  const [fileName, setFileName] = useState("");
   const [formData, setFormData] = useState({
     asignatura: '',
     periodo: '',
@@ -132,12 +134,11 @@ const BoardDocente = () => {
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
+    setFileName(file.name);
     try {
       const arrayBuffer = await file.arrayBuffer();
       const result = await mammoth.extractRawText({ arrayBuffer });
       const text = result.value;
-
       const parsedData = {
         asignatura: text.match(/ASIGNATURA\s*([^\n]*)/)?.[1]?.trim() || '',
         periodo: text.match(/PERIODO ACADÉMICO ORDINARIO \(PAO\)\s*([^\n]*)/)?.[1]?.trim() || '',
@@ -190,15 +191,9 @@ const BoardDocente = () => {
           },
         },
       };
-      if (parsedData.asignatura !== selectedSubject) {
-        setError('La asignatura del documento no coincide con la seleccionada.');
-        return;
-      }
-
-      setError('');
       setFormData(parsedData);
     } catch (err) {
-      setError('Error al procesar el documento.');
+      // No mostrar error, solo no hacer nada
       console.error(err);
     }
   };
@@ -671,41 +666,41 @@ const BoardDocente = () => {
   };
 
   const renderPreview = () => (
-    <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl shadow-lg">
-      <h1 className="text-3xl font-bold text-center text-gray-800 mb-6">PROGRAMA ANALÍTICO DE ASIGNATURA</h1>
+    <div className="p-6 bg-gradient-to-br from-gray-100 to-gray-50 border border-gray-200 rounded-xl shadow-lg text-black">
+      <h1 className="text-3xl font-bold text-center mb-6 futuristic-label" style={{ color: 'var(--color-primary, #2E7D32)' }}>PROGRAMA ANALÍTICO DE ASIGNATURA</h1>
       <table className="w-full border-collapse mb-6 bg-white rounded-lg overflow-hidden shadow-md">
         <tbody>
           <tr className="bg-gray-100">
             <td className="border border-gray-300 p-4 font-semibold text-gray-700 w-1/4">ASIGNATURA</td>
-            <td className="border border-gray-300 p-4 w-1/4">{formData.asignatura}</td>
+            <td className="border border-gray-300 p-4 w-1/4 text-black">{formData.asignatura}</td>
             <td className="border border-gray-300 p-4 font-semibold text-gray-700 w-1/4">PERIODO ACADÉMICO ORDINARIO (PAO)</td>
-            <td className="border border-gray-300 p-4 w-1/4">{formData.periodo}</td>
+            <td className="border border-gray-300 p-4 w-1/4 text-black">{formData.periodo}</td>
           </tr>
           <tr>
             <td className="border border-gray-300 p-4"></td>
             <td className="border border-gray-300 p-4"></td>
             <td className="border border-gray-300 p-4 font-semibold text-gray-700">NIVEL</td>
-            <td className="border border-gray-300 p-4">{formData.nivel}</td>
+            <td className="border border-gray-300 p-4 text-black">{formData.nivel}</td>
           </tr>
           <tr>
             <td className="border border-gray-300 p-4 font-semibold text-gray-700">CARACTERIZACIÓN</td>
-            <td className="border border-gray-300 p-4" colSpan={3}>{formData.caracterizacion}</td>
+            <td className="border border-gray-300 p-4 text-black" colSpan={3}>{formData.caracterizacion}</td>
           </tr>
           <tr>
             <td className="border border-gray-300 p-4 font-semibold text-gray-700">OBJETIVOS DE LA ASIGNATURA</td>
-            <td className="border border-gray-300 p-4" colSpan={3}>{formData.objetivos}</td>
+            <td className="border border-gray-300 p-4 text-black" colSpan={3}>{formData.objetivos}</td>
           </tr>
           <tr>
             <td className="border border-gray-300 p-4 font-semibold text-gray-700">COMPETENCIAS</td>
-            <td className="border border-gray-300 p-4" colSpan={3}>{formData.competencias}</td>
+            <td className="border border-gray-300 p-4 text-black" colSpan={3}>{formData.competencias}</td>
           </tr>
         </tbody>
       </table>
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4">RESULTADOS DE APRENDIZAJE DE LA ASIGNATURA</h2>
-      <p className="text-gray-700 mb-2"><strong>Actitudinales:</strong> {formData.resultados.actitudinales || 'N/A'}</p>
-      <p className="text-gray-700 mb-2"><strong>Cognitivos:</strong> {formData.resultados.cognitivos}</p>
-      <p className="text-gray-700 mb-2"><strong>Procedimentales:</strong> {formData.resultados.procedimentales}</p>
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4 mt-6">CONTENIDOS DE LA ASIGNATURA</h2>
+      <h2 className="text-2xl font-semibold mb-4 mt-6 futuristic-label" style={{ color: 'var(--color-primary, #2E7D32)' }}>RESULTADOS DE APRENDIZAJE DE LA ASIGNATURA</h2>
+      <p className="mb-2"><strong>Actitudinales:</strong> <span className="text-black">{formData.resultados.actitudinales || 'N/A'}</span></p>
+      <p className="mb-2"><strong>Cognitivos:</strong> <span className="text-black">{formData.resultados.cognitivos}</span></p>
+      <p className="mb-2"><strong>Procedimentales:</strong> <span className="text-black">{formData.resultados.procedimentales}</span></p>
+      <h2 className="text-2xl font-semibold mb-4 mt-6 futuristic-label" style={{ color: 'var(--color-primary, #2E7D32)' }}>CONTENIDOS DE LA ASIGNATURA</h2>
       <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-md">
         <thead>
           <tr className="bg-gray-100">
@@ -716,72 +711,51 @@ const BoardDocente = () => {
         <tbody>
           {formData.unidades.map((unidad, index) => (
             <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
-              <td className="border border-gray-300 p-4">{unidad.nombre}</td>
-              <td className="border border-gray-300 p-4">{unidad.descripcion}</td>
+              <td className="border border-gray-300 p-4 text-black">{unidad.nombre}</td>
+              <td className="border border-gray-300 p-4 text-black">{unidad.descripcion}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4 mt-6">METODOLOGÍA</h2>
-      <p className="text-gray-700 mb-4">{formData.metodologia || 'N/A'}</p>
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4 mt-6">PROCEDIMIENTOS DE EVALUACIÓN</h2>
-      <p className="text-gray-700 mb-2"><strong>Docencia:</strong> {formData.procedimientos.docencia || 'N/A'}</p>
-      <p className="text-gray-700 mb-2"><strong>Prácticas Formativas:</strong> {formData.procedimientos.practicas || 'N/A'}</p>
-      <p className="text-gray-700 mb-2"><strong>Trabajo Autónomo:</strong> {formData.procedimientos.autonomo || 'N/A'}</p>
-      <p className="text-gray-700 mb-2"><strong>Examen:</strong> {formData.procedimientos.examen}</p>
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4 mt-6">BIBLIOGRAFÍA - FUENTES DE CONSULTA</h2>
-      <p className="text-gray-700 font-semibold mb-2">BIBLIOGRAFÍA BÁSICA</p>
-      <ul className="list-disc list-inside text-gray-700 mb-4 pl-5">
+      <h2 className="text-2xl font-semibold mb-4 mt-6 futuristic-label" style={{ color: 'var(--color-primary, #2E7D32)' }}>METODOLOGÍA</h2>
+      <p className="mb-4 text-black">{formData.metodologia || 'N/A'}</p>
+      <h2 className="text-2xl font-semibold mb-4 mt-6 futuristic-label" style={{ color: 'var(--color-primary, #2E7D32)' }}>PROCEDIMIENTOS DE EVALUACIÓN</h2>
+      <p className="mb-2"><strong>Docencia:</strong> <span className="text-black">{formData.procedimientos.docencia || 'N/A'}</span></p>
+      <p className="mb-2"><strong>Prácticas Formativas:</strong> <span className="text-black">{formData.procedimientos.practicas || 'N/A'}</span></p>
+      <p className="mb-2"><strong>Trabajo Autónomo:</strong> <span className="text-black">{formData.procedimientos.autonomo || 'N/A'}</span></p>
+      <p className="mb-2"><strong>Examen:</strong> <span className="text-black">{formData.procedimientos.examen}</span></p>
+      <h2 className="text-2xl font-semibold mb-4 mt-6 futuristic-label" style={{ color: 'var(--color-primary, #2E7D32)' }}>BIBLIOGRAFÍA - FUENTES DE CONSULTA</h2>
+      <p className="font-semibold mb-2" style={{ color: 'var(--color-primary, #2E7D32)' }}>BIBLIOGRAFÍA BÁSICA</p>
+      <ul className="list-disc list-inside mb-4 pl-5">
         {formData.bibliografia.basica.map((item, index) => (
-          <li key={index} className="mb-1">{item}</li>
+          <li key={index} className="mb-1 text-black">{item}</li>
         ))}
       </ul>
-      <p className="text-gray-700 font-semibold mb-2">BIBLIOGRAFÍA COMPLEMENTARIA</p>
-      <ul className="list-disc list-inside text-gray-700 mb-4 pl-5">
+      <p className="font-semibold mb-2" style={{ color: 'var(--color-primary, #2E7D32)' }}>BIBLIOGRAFÍA COMPLEMENTARIA</p>
+      <ul className="list-disc list-inside mb-4 pl-5">
         {formData.bibliografia.complementaria.map((item, index) => (
-          <li key={index} className="mb-1">{item}</li>
+          <li key={index} className="mb-1 text-black">{item}</li>
         ))}
       </ul>
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4 mt-6">VISADO:</h2>
-      <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-md">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-gray-300 p-4 text-gray-700">DECANO/A</th>
-            <th className="border border-gray-300 p-4 text-gray-700">DIRECTOR/A ACADÉMICO/A</th>
-            <th className="border border-gray-300 p-4 text-gray-700">COORDINADOR/A DE CARRERA</th>
-            <th className="border border-gray-300 p-4 text-gray-700">DOCENTE</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td className="border border-gray-300 p-4"><img src={qrCodes.decano} alt="QR Decano" width="80" /></td>
-            <td className="border border-gray-300 p-4"><img src={qrCodes.director} alt="QR Director" width="80" /></td>
-            <td className="border border-gray-300 p-4"><img src={qrCodes.coordinador} alt="QR Coordinador" width="80" /></td>
-            <td className="border border-gray-300 p-4"><img src={qrCodes.docente} alt="QR Docente" width="80" /></td>
-          </tr>
-          <tr className="bg-gray-50">
-            <td className="border border-gray-300 p-4 font-semibold text-gray-700">Fecha:</td>
-            <td className="border border-gray-300 p-4">{formData.visado.fechas.decano || startDatesDB[formData.periodo] || ''}</td>
-            <td className="border border-gray-300 p-4 font-semibold text-gray-700">Fecha:</td>
-            <td className="border border-gray-300 p-4">{formData.visado.fechas.director || startDatesDB[formData.periodo] || ''}</td>
-          </tr>
-          <tr>
-            <td className="border border-gray-300 p-4"></td>
-            <td className="border border-gray-300 p-4"></td>
-            <td className="border border-gray-300 p-4 font-semibold text-gray-700">Fecha:</td>
-            <td className="border border-gray-300 p-4">{formData.visado.fechas.coordinador || startDatesDB[formData.periodo] || ''}</td>
-          </tr>
-          <tr className="bg-gray-50">
-            <td className="border border-gray-300 p-4"></td>
-            <td className="border border-gray-300 p-4"></td>
-            <td className="border border-gray-300 p-4"></td>
-            <td className="border border-gray-300 p-4">{formData.visado.fechas.docente || startDatesDB[formData.periodo] || ''}</td>
-          </tr>
-        </tbody>
-      </table>
+      <h2 className="text-2xl font-semibold mb-4 mt-6 futuristic-label" style={{ color: 'var(--color-primary, #2E7D32)' }}>VISADO:</h2>
+      <div className="visado-row">
+        {['decano', 'director', 'coordinador', 'docente'].map((role) => (
+          <div className="visado-col" key={role}>
+            <div className="visado-nombre futuristic-label" style={{ color: 'var(--color-primary, #2E7D32)' }}>{role.charAt(0).toUpperCase() + role.slice(1)}</div>
+            <img
+              src={qrCodes[role]}
+              alt={`QR ${role}`}
+              className="visado-qr futuristic-qr"
+              width="80"
+            />
+            <div className="visado-nombre-preview text-black">{formData.visado[role]}</div>
+            <div className="visado-fecha-preview text-black">{formData.visado.fechas[role] || startDatesDB[formData.periodo] || ''}</div>
+          </div>
+        ))}
+      </div>
       <button
         onClick={togglePreview}
-        className="mt-6 bg-yellow-600 text-white px-6 py-3 rounded-lg hover:bg-yellow-700 transition duration-300 transform hover:scale-105"
+        className="mt-6 futuristic-btn"
       >
         Editar
       </button>
@@ -789,62 +763,79 @@ const BoardDocente = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-8">
+    <div className="board-docente-container">
       {previewMode ? (
         renderPreview()
       ) : (
-        <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-2xl p-10 border border-gray-200">
-          <h1 className="text-4xl font-bold text-gray-800 text-center mb-8">PROGRAMA ANALÍTICO DE ASIGNATURA</h1>
-          {error && <p className="text-red-600 mb-6 text-center">{error}</p>}
-          <div className="mb-8">
-            <label className="block text-lg font-semibold text-gray-700 mb-2">Seleccionar Asignatura</label>
+        <div className="board-docente-card">
+          <h1 className="board-docente-title">
+            <span className="material-icons board-docente-icon">menu_book</span>
+            PROGRAMA ANALÍTICO DE ASIGNATURA
+          </h1>
+          {/* Sección: Selección de Asignatura */}
+          <div className="board-docente-section">
+            <label className="board-docente-label">
+              Seleccionar Asignatura
+            </label>
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+              className="board-docente-select"
             >
               <option value="">Seleccione una asignatura</option>
               {subjectsDB.map((subject) => (
-                <option key={subject} value={subject} className="py-2">{subject}</option>
+                <option key={subject} value={subject}>{subject}</option>
               ))}
             </select>
           </div>
-          <div className="mb-8">
-            <label className="block text-lg font-semibold text-gray-700 mb-2">Cargar Documento Word</label>
+          {/* Sección: Cargar Word */}
+          <div className="board-docente-section">
+            <label className="board-docente-label">
+              Cargar Documento Word
+            </label>
             <input
               type="file"
               accept=".docx"
               onChange={handleFileUpload}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+              className="board-docente-input"
             />
+            {fileName && (
+              <div className="board-docente-file-info">
+                Archivo cargado: {fileName}
+              </div>
+            )}
           </div>
-          <div className="mb-8">
-            <label className="block text-lg font-semibold text-gray-700 mb-2">Cargar JSON</label>
+          {/* Sección: Cargar JSON */}
+          <div className="board-docente-section">
+            <label className="board-docente-label">
+              Cargar JSON
+            </label>
             <input
               type="file"
               accept=".json"
               onChange={loadJSON}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+              className="board-docente-input"
             />
           </div>
-          <div className="border-t-4 border-b-4 border-gray-200 py-6 mb-8 bg-gray-50 rounded-lg shadow-inner">
-            <div className="grid grid-cols-4 gap-6 border border-gray-200 rounded-lg p-6 bg-white shadow-md">
-              <div className="p-4 font-semibold text-gray-700 border-r border-gray-200">ASIGNATURA</div>
-              <div className="p-4">
+          {/* Sección: Datos principales */}
+          <div className="board-docente-section">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label className="board-docente-label">Asignatura</label>
                 <input
                   type="text"
                   value={formData.asignatura}
                   onChange={(e) => handleInputChange(e, null, 'asignatura')}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="board-docente-input"
                   readOnly={!!selectedSubject}
                 />
               </div>
-              <div className="p-4 font-semibold text-gray-700 border-r border-gray-200">PERIODO ACADÉMICO ORDINARIO (PAO)</div>
-              <div className="p-4">
+              <div>
+                <label className="board-docente-label">Periodo Académico Ordinario (PAO)</label>
                 <select
                   value={formData.periodo}
                   onChange={(e) => handleInputChange(e, null, 'periodo')}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="board-docente-select"
                 >
                   <option value="">Seleccione un periodo</option>
                   {periodsDB.map((period) => (
@@ -852,14 +843,12 @@ const BoardDocente = () => {
                   ))}
                 </select>
               </div>
-              <div className="p-4"></div>
-              <div className="p-4"></div>
-              <div className="p-4 font-semibold text-gray-700 border-r border-gray-200">NIVEL</div>
-              <div className="p-4">
+              <div>
+                <label className="board-docente-label">Nivel</label>
                 <select
                   value={formData.nivel}
                   onChange={(e) => handleInputChange(e, null, 'nivel')}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="board-docente-select"
                 >
                   <option value="">Seleccione un nivel</option>
                   {levelsDB.map((level) => (
@@ -867,169 +856,164 @@ const BoardDocente = () => {
                   ))}
                 </select>
               </div>
-              <div className="p-4 font-semibold text-gray-700 border-r border-t border-gray-200">CARACTERIZACIÓN</div>
-              <div className="p-4 col-span-3 border-t border-gray-200">
-                <textarea
-                  value={formData.caracterizacion}
-                  onChange={(e) => handleInputChange(e, null, 'caracterizacion')}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows="4"
-                />
-              </div>
-              <div className="p-4 font-semibold text-gray-700 border-r border-t border-gray-200">OBJETIVOS DE LA ASIGNATURA</div>
-              <div className="p-4 col-span-3 border-t border-gray-200">
-                <textarea
-                  value={formData.objetivos}
-                  onChange={(e) => handleInputChange(e, null, 'objetivos')}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows="3"
-                />
-              </div>
-              <div className="p-4 font-semibold text-gray-700 border-r border-t border-gray-200">COMPETENCIAS</div>
-              <div className="p-4 col-span-3 border-t border-gray-200">
-                <textarea
-                  value={formData.competencias}
-                  onChange={(e) => handleInputChange(e, null, 'competencias')}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows="3"
-                />
-              </div>
             </div>
           </div>
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">RESULTADOS DE APRENDIZAJE DE LA ASIGNATURA</h2>
-            <div className="space-y-6">
+          {/* Sección: Caracterización, Objetivos, Competencias */}
+          <div className="board-docente-section">
+            <label className="board-docente-label">Caracterización</label>
+            <textarea
+              value={formData.caracterizacion}
+              onChange={(e) => handleInputChange(e, null, 'caracterizacion')}
+              className="board-docente-textarea"
+              rows="3"
+            />
+            <label className="board-docente-label">Objetivos de la Asignatura</label>
+            <textarea
+              value={formData.objetivos}
+              onChange={(e) => handleInputChange(e, null, 'objetivos')}
+              className="board-docente-textarea"
+              rows="3"
+            />
+            <label className="board-docente-label">Competencias</label>
+            <textarea
+              value={formData.competencias}
+              onChange={(e) => handleInputChange(e, null, 'competencias')}
+              className="board-docente-textarea"
+              rows="3"
+            />
+          </div>
+          {/* Sección: Resultados de Aprendizaje */}
+          <div className="board-docente-section">
+            <label className="board-docente-label">Resultados de Aprendizaje</label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-lg font-medium text-gray-700">Actitudinales</label>
+                <label className="board-docente-label">Actitudinales</label>
                 <textarea
                   value={formData.resultados.actitudinales}
                   onChange={(e) => handleInputChange(e, 'resultados', 'actitudinales')}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows="3"
+                  className="board-docente-textarea"
+                  rows="2"
                 />
               </div>
               <div>
-                <label className="block text-lg font-medium text-gray-700">Cognitivos</label>
+                <label className="board-docente-label">Cognitivos</label>
                 <textarea
                   value={formData.resultados.cognitivos}
                   onChange={(e) => handleInputChange(e, 'resultados', 'cognitivos')}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows="3"
+                  className="board-docente-textarea"
+                  rows="2"
                 />
               </div>
               <div>
-                <label className="block text-lg font-medium text-gray-700">Procedimentales</label>
+                <label className="board-docente-label">Procedimentales</label>
                 <textarea
                   value={formData.resultados.procedimentales}
                   onChange={(e) => handleInputChange(e, 'resultados', 'procedimentales')}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows="3"
+                  className="board-docente-textarea"
+                  rows="2"
                 />
               </div>
             </div>
           </div>
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">CONTENIDOS DE LA ASIGNATURA</h2>
-            <div className="border border-gray-200 rounded-lg overflow-hidden shadow-md">
-              <div className="grid grid-cols-3 gap-0 border-b border-gray-200 bg-gray-50">
-                <div className="p-4 font-semibold text-gray-700 border-r border-gray-200 col-span-1">UNIDADES TEMÁTICAS</div>
-                <div className="p-4 font-semibold text-gray-700 col-span-2">DESCRIPCIÓN</div>
+          {/* Sección: Unidades Temáticas */}
+          <div className="board-docente-section">
+            <label className="board-docente-label">Contenidos de la Asignatura</label>
+            {formData.unidades.map((unidad, index) => (
+              <div key={index} className="board-docente-unidad">
+                <input
+                  type="text"
+                  value={unidad.nombre}
+                  readOnly
+                  className="board-docente-input"
+                />
+                <textarea
+                  value={unidad.descripcion}
+                  onChange={(e) => handleInputChange(e, 'unidades', 'descripcion', index)}
+                  className="board-docente-textarea"
+                  rows="2"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeUnit(index)}
+                  className="board-docente-btn board-docente-btn-danger futuristic-btn"
+                  title="Eliminar Unidad"
+                >
+                  <span className="material-icons board-docente-icon">delete</span>
+                </button>
               </div>
-              {formData.unidades.map((unidad, index) => (
-                <div key={index} className="grid grid-cols-3 gap-0 border-t border-gray-200 bg-white">
-                  <div className="p-4 border-r border-gray-200">
-                    <input
-                      type="text"
-                      value={unidad.nombre}
-                      readOnly
-                      className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100"
-                    />
-                    <button
-                      onClick={() => removeUnit(index)}
-                      className="mt-2 bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition duration-200"
-                    >
-                      Eliminar
-                    </button>
-                  </div>
-                  <div className="p-4 col-span-2">
-                    <textarea
-                      value={unidad.descripcion}
-                      onChange={(e) => handleInputChange(e, 'unidades', 'descripcion', index)}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      rows="4"
-                    />
-                  </div>
-                </div>
-              ))}
-              <button
-                onClick={addUnit}
-                className="mt-4 w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200"
-              >
-                Agregar Unidad
-              </button>
-            </div>
+            ))}
+            <button
+              type="button"
+              onClick={addUnit}
+              className="board-docente-btn futuristic-btn"
+            >
+              Agregar Unidad
+            </button>
           </div>
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">METODOLOGÍA</h2>
+          {/* Sección: Metodología */}
+          <div className="board-docente-section">
+            <label className="board-docente-label">Metodología</label>
             <textarea
               value={formData.metodologia}
               onChange={(e) => handleInputChange(e, null, 'metodologia')}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              rows="4"
+              className="board-docente-textarea"
+              rows="3"
             />
           </div>
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">PROCEDIMIENTOS DE EVALUACIÓN</h2>
-            <div className="space-y-6">
+          {/* Sección: Procedimientos de Evaluación */}
+          <div className="board-docente-section">
+            <label className="board-docente-label">Procedimientos de Evaluación</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-lg font-medium text-gray-700">Docencia</label>
+                <label className="board-docente-label">Docencia</label>
                 <input
                   type="text"
                   value={formData.procedimientos.docencia}
                   onChange={(e) => handleInputChange(e, 'procedimientos', 'docencia')}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="board-docente-input"
                 />
               </div>
               <div>
-                <label className="block text-lg font-medium text-gray-700">Prácticas Formativas de Aplicación y Experimentación</label>
+                <label className="board-docente-label">Prácticas Formativas</label>
                 <input
                   type="text"
                   value={formData.procedimientos.practicas}
                   onChange={(e) => handleInputChange(e, 'procedimientos', 'practicas')}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="board-docente-input"
                 />
               </div>
               <div>
-                <label className="block text-lg font-medium text-gray-700">Trabajo Autónomo</label>
+                <label className="board-docente-label">Trabajo Autónomo</label>
                 <input
                   type="text"
                   value={formData.procedimientos.autonomo}
                   onChange={(e) => handleInputChange(e, 'procedimientos', 'autonomo')}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="board-docente-input"
                 />
               </div>
               <div>
-                <label className="block text-lg font-medium text-gray-700">Examen</label>
+                <label className="board-docente-label">Examen</label>
                 <input
                   type="text"
                   value={formData.procedimientos.examen}
                   onChange={(e) => handleInputChange(e, 'procedimientos', 'examen')}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="board-docente-input"
                 />
               </div>
             </div>
           </div>
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">BIBLIOGRAFÍA - FUENTES DE CONSULTA</h2>
-            <div className="space-y-6">
+          {/* Sección: Bibliografía */}
+          <div className="board-docente-section">
+            <label className="board-docente-label">Bibliografía - Fuentes de Consulta</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-lg font-semibold text-gray-700">BIBLIOGRAFÍA BÁSICA</label>
+                <label className="board-docente-label">Básica</label>
                 {formData.bibliografia.basica.map((item, index) => (
                   <select
                     key={index}
                     value={item}
                     onChange={(e) => handleInputChange(e, 'bibliografia', 'basica', index)}
-                    className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="board-docente-select"
                   >
                     <option value="">Seleccione una referencia</option>
                     {bibliographyDB.basica.map((ref) => (
@@ -1038,20 +1022,21 @@ const BoardDocente = () => {
                   </select>
                 ))}
                 <button
+                  type="button"
                   onClick={() => addBibliography('basica')}
-                  className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200"
+                  className="board-docente-btn futuristic-btn"
                 >
                   Agregar Referencia
                 </button>
               </div>
               <div>
-                <label className="block text-lg font-semibold text-gray-700">BIBLIOGRAFÍA COMPLEMENTARIA</label>
+                <label className="board-docente-label">Complementaria</label>
                 {formData.bibliografia.complementaria.map((item, index) => (
                   <select
                     key={index}
                     value={item}
                     onChange={(e) => handleInputChange(e, 'bibliografia', 'complementaria', index)}
-                    className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="board-docente-select"
                   >
                     <option value="">Seleccione una referencia</option>
                     {bibliographyDB.complementaria.map((ref) => (
@@ -1060,104 +1045,78 @@ const BoardDocente = () => {
                   </select>
                 ))}
                 <button
+                  type="button"
                   onClick={() => addBibliography('complementaria')}
-                  className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200"
+                  className="board-docente-btn futuristic-btn"
                 >
                   Agregar Referencia
                 </button>
               </div>
             </div>
           </div>
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">VISADO:</h2>
-            <div className="border border-gray-200 rounded-lg overflow-hidden shadow-md">
-              <div className="grid grid-cols-4 gap-0 border-b border-gray-200 bg-gray-50">
-                <div className="p-4 font-semibold text-gray-700 border-r border-gray-200">DECANO/A</div>
-                <div className="p-4 font-semibold text-gray-700 border-r border-gray-200">DIRECTOR/A ACADÉMICO/A</div>
-                <div className="p-4 font-semibold text-gray-700 border-r border-gray-200">COORDINADOR/A DE CARRERA</div>
-                <div className="p-4 font-semibold text-gray-700">DOCENTE</div>
-              </div>
-              <div className="grid grid-cols-4 gap-0 border-t border-gray-200 bg-white">
-                <div className="p-4 border-r border-gray-200"><img src={qrCodes.decano} alt="QR Decano" width="80" /></div>
-                <div className="p-4 border-r border-gray-200"><img src={qrCodes.director} alt="QR Director" width="80" /></div>
-                <div className="p-4 border-r border-gray-200"><img src={qrCodes.coordinador} alt="QR Coordinador" width="80" /></div>
-                <div className="p-4"><img src={qrCodes.docente} alt="QR Docente" width="80" /></div>
-              </div>
-              <div className="grid grid-cols-4 gap-0 border-t border-gray-200 bg-gray-50">
-                <div className="p-4 font-semibold text-gray-700 border-r border-gray-200">Fecha:</div>
-                <div className="p-4 border-r border-gray-200">
+          {/* Sección: Visado */}
+          <div className="board-docente-section visado-grid-futuristic">
+            <label className="board-docente-label">Visado</label>
+            <div className="visado-row">
+              {['decano', 'director', 'coordinador', 'docente'].map((role) => (
+                <div className="visado-col" key={role}>
+                  <div className="visado-nombre futuristic-label">{role.charAt(0).toUpperCase() + role.slice(1)}</div>
+                  <img
+                    src={qrCodes[role]}
+                    alt={`QR ${role}`}
+                    className="visado-qr futuristic-qr"
+                    width="80"
+                  />
                   <input
                     type="text"
-                    value={formData.visado.fechas.decano || startDatesDB[formData.periodo] || ''}
-                    onChange={(e) => handleInputChange(e, 'visado.fechas', 'decano')}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={formData.visado[role] || ''}
+                    onChange={(e) => handleInputChange(e, 'visado', role)}
+                    className="board-docente-input visado-input"
+                    placeholder={`Nombre del ${role}`}
                   />
-                </div>
-                <div className="p-4 font-semibold text-gray-700 border-r border-gray-200">Fecha:</div>
-                <div className="p-4">
                   <input
                     type="text"
-                    value={formData.visado.fechas.director || startDatesDB[formData.periodo] || ''}
-                    onChange={(e) => handleInputChange(e, 'visado.fechas', 'director')}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={formData.visado.fechas[role] || startDatesDB[formData.periodo] || ''}
+                    onChange={(e) => handleInputChange(e, 'visado.fechas', role)}
+                    className="board-docente-input visado-input"
+                    placeholder="Fecha"
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-4 gap-0 border-t border-gray-200">
-                <div className="p-4"></div>
-                <div className="p-4"></div>
-                <div className="p-4 font-semibold text-gray-700 border-r border-gray-200">Fecha:</div>
-                <div className="p-4">
-                  <input
-                    type="text"
-                    value={formData.visado.fechas.coordinador || startDatesDB[formData.periodo] || ''}
-                    onChange={(e) => handleInputChange(e, 'visado.fechas', 'coordinador')}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-4 gap-0 border-t border-gray-200 bg-gray-50">
-                <div className="p-4"></div>
-                <div className="p-4"></div>
-                <div className="p-4"></div>
-                <div className="p-4">
-                  <input
-                    type="text"
-                    value={formData.visado.fechas.docente || startDatesDB[formData.periodo] || ''}
-                    onChange={(e) => handleInputChange(e, 'visado.fechas', 'docente')}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
+              ))}
             </div>
           </div>
-          <div className="flex justify-center space-x-6">
+          {/* Botones de acción */}
+          <div className="futuristic-btn-group">
             <button
               type="button"
               onClick={exportToJSON}
-              className="bg-gradient-to-r from-blue-600 to-blue-800 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-blue-900 transition duration-300 transform hover:scale-105"
+              className="board-docente-btn futuristic-btn"
             >
+              <span className="material-icons board-docente-icon">download</span>
               Exportar a JSON
             </button>
             <button
               type="button"
               onClick={exportToWord}
-              className="bg-gradient-to-r from-green-600 to-green-800 text-white px-6 py-3 rounded-lg hover:from-green-700 hover:to-green-900 transition duration-300 transform hover:scale-105"
+              className="board-docente-btn futuristic-btn"
             >
+              <span className="material-icons board-docente-icon">description</span>
               Exportar a Word
             </button>
             <button
               type="button"
               onClick={exportToPDF}
-              className="bg-gradient-to-r from-red-600 to-red-800 text-white px-6 py-3 rounded-lg hover:from-red-700 hover:to-red-900 transition duration-300 transform hover:scale-105"
+              className="board-docente-btn futuristic-btn"
             >
+              <span className="material-icons board-docente-icon">picture_as_pdf</span>
               Exportar a PDF
             </button>
             <button
               type="button"
               onClick={togglePreview}
-              className="bg-gradient-to-r from-yellow-600 to-yellow-800 text-white px-6 py-3 rounded-lg hover:from-yellow-700 hover:to-yellow-900 transition duration-300 transform hover:scale-105"
+              className="board-docente-btn futuristic-btn"
             >
+              <span className="material-icons board-docente-icon">visibility</span>
               Previsualizar
             </button>
           </div>
@@ -1168,5 +1127,3 @@ const BoardDocente = () => {
 };
 
 export default BoardDocente;
-
-//Previsualizacion de carga, y ver asignaturas de carga// dos botone//

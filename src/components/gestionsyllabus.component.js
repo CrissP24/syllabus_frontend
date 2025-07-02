@@ -3,6 +3,8 @@ import Docxtemplater from 'docxtemplater';
 import PizZip from 'pizzip';
 import { saveAs } from 'file-saver';
 import { QRCodeCanvas } from 'qrcode.react';
+import mammoth from 'mammoth';
+import './css/BoardDocente.css';
 
 // Simulación de base de datos
 const db = {
@@ -52,6 +54,54 @@ const db = {
           resultados: "Resolver operaciones con números reales",
           criterios: "Exactitud en cálculos",
           instrumentos: "Examen escrito",
+        },
+      ],
+    },
+    {
+      id: "FDP101",
+      nombre: "Fundamentos de Programación",
+      codigo: "FDP101",
+      prerrequisito: "Ninguno",
+      correquisito: "Ninguno",
+      facultad: "Ciencias Técnicas",
+      carrera: "Tecnologías de la Información",
+      unidadCurricular: "Formación Básica",
+      ejeFormacion: "Ciencias Básicas",
+      campoFormacion: {
+        amplio: "Ciencias Computacionales",
+        especifico: "Programación",
+        detallado: "Fundamentos de Programación",
+      },
+      modalidad: "Presencial",
+      periodo: "PI 2025",
+      nivel: "Primer Semestre",
+      totalHoras: "64",
+      horasDocencia: "32",
+      horasPFAE: "16",
+      horasTA: "16",
+      horasPPP: "0",
+      horasHVS: "0",
+      unidades: [
+        {
+          nombre: "UT1",
+          contenidos: "Algoritmos, variables, estructuras de control",
+          horasHD: "8",
+          horasPFAE: "4",
+          horasTA: "4",
+          metodologias: "Clase magistral, ejercicios prácticos",
+          recursos: "Pizarra, proyector",
+          escenario: "Presencial",
+          bibliografia: "Joyanes, L. (2017). Fundamentos de Programación.",
+          fecha: "Paralelo A: 01/03/2025",
+        },
+      ],
+      resultados: [
+        {
+          nombre: "UT1",
+          contenidos: "Algoritmos, variables, estructuras de control",
+          resultados: "Resolver problemas básicos de programación",
+          criterios: "Correctitud de algoritmos",
+          instrumentos: "Examen práctico",
         },
       ],
     },
@@ -196,7 +246,6 @@ const Gestionsyllabus = () => {
         },
         rubricas: asignatura.rubricas || [{ criterio: "", puntaje: "", descripcion: "" }],
       });
-      setEditando(true);
       setError("");
       setVistaPrevia(false);
       console.log("Datos cargados:", asignatura);
@@ -307,7 +356,7 @@ const Gestionsyllabus = () => {
   const exportarAWord = async () => {
     try {
       console.log("Iniciando exportación a Word...");
-      const response = await fetch('/template.docx');
+      const response = await fetch('/Anexo No. 2 Formato Syllabus de la asignatura.docx');
       if (!response.ok) {
         throw new Error(`No se pudo cargar la plantilla: ${response.statusText}`);
       }
@@ -413,6 +462,30 @@ const Gestionsyllabus = () => {
     console.log("Cambiando vistaPrevia a:", !vistaPrevia);
     setVistaPrevia(!vistaPrevia);
     setError("");
+  };
+
+  // Cargar Word y rellenar datos
+  const handleWordUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    mammoth.extractRawText({ arrayBuffer: file.arrayBuffer() })
+      .then((result) => {
+        const text = result.value;
+        // Aquí puedes parsear el texto y rellenar los campos principales del formData
+        // Ejemplo básico para algunos campos:
+        setFormData((prev) => ({
+          ...prev,
+          nombre: text.match(/NOMBRE\s*([^\n]*)/)?.[1]?.trim() || prev.nombre,
+          codigo: text.match(/CÓDIGO\s*([^\n]*)/)?.[1]?.trim() || prev.codigo,
+          facultad: text.match(/FACULTAD\s*([^\n]*)/)?.[1]?.trim() || prev.facultad,
+          carrera: text.match(/CARRERA\s*([^\n]*)/)?.[1]?.trim() || prev.carrera,
+          // ... puedes seguir con los demás campos según el formato del Word
+        }));
+      })
+      .catch((err) => {
+        setError('Error al procesar el documento Word.');
+        console.error(err);
+      });
   };
 
   return (
@@ -801,83 +874,35 @@ const Gestionsyllabus = () => {
             </button>
 
             <h2 className="text-xl font-semibold mb-2">5. Visado</h2>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <input
-                  type="text"
-                  placeholder="Decano/a"
-                  value={formData.visado.decano}
-                  onChange={(e) => manejarCambioInput(e, "visado", null, "decano")}
-                  className="border p-2 rounded w-full"
-                />
-                {formData.visado.qrDecano && (
-                  <QRCodeCanvas value={formData.visado.qrDecano} size={100} className="mt-2" />
-                )}
+            <div className="board-docente-section visado-grid-futuristic">
+              <label className="board-docente-label">Visado</label>
+              <div className="visado-row">
+                {[
+                  { key: 'decano', label: 'Decano/a', qr: formData.visado.qrDecano, nombre: formData.visado.decano, fecha: formData.visado.fechaDecano },
+                  { key: 'director', label: 'Director/a Académico/a', qr: formData.visado.qrDirector, nombre: formData.visado.director, fecha: formData.visado.fechaDirector },
+                  { key: 'coordinador', label: 'Coordinador/a de Carrera', qr: formData.visado.qrCoordinador, nombre: formData.visado.coordinador, fecha: formData.visado.fechaCoordinador },
+                  { key: 'docente', label: 'Docente', qr: formData.visado.qrDocente, nombre: formData.visado.docente, fecha: formData.visado.fechaDocente },
+                ].map((role) => (
+                  <div className="visado-col" key={role.key}>
+                    <div className="visado-nombre futuristic-label">{role.label}</div>
+                    {role.qr && <QRCodeCanvas value={role.qr} size={80} className="visado-qr futuristic-qr" />}
+                    <input
+                      type="text"
+                      value={role.nombre}
+                      onChange={e => manejarCambioInput(e, 'visado', null, role.key)}
+                      className="board-docente-input visado-input"
+                      placeholder={`Nombre del ${role.label}`}
+                    />
+                    <input
+                      type="text"
+                      value={role.fecha}
+                      onChange={e => manejarCambioInput(e, 'visado', null, `fecha${role.key.charAt(0).toUpperCase() + role.key.slice(1)}`)}
+                      className="board-docente-input visado-input"
+                      placeholder="Fecha"
+                    />
+                  </div>
+                ))}
               </div>
-              <input
-                type="text"
-                placeholder="Fecha Decano"
-                value={formData.visado.fechaDecano}
-                onChange={(e) => manejarCambioInput(e, "visado", null, "fechaDecano")}
-                className="border p-2 rounded"
-              />
-              <div>
-                <input
-                  type="text"
-                  placeholder="Director/a Académico/a"
-                  value={formData.visado.director}
-                  onChange={(e) => manejarCambioInput(e, "visado", null, "director")}
-                  className="border p-2 rounded w-full"
-                />
-                {formData.visado.qrDirector && (
-                  <QRCodeCanvas value={formData.visado.qrDirector} size={100} className="mt-2" />
-                )}
-              </div>
-              <input
-                type="text"
-                placeholder="Fecha Director"
-                value={formData.visado.fechaDirector}
-                onChange={(e) => manejarCambioInput(e, "visado", null, "fechaDirector")}
-                className="border p-2 rounded"
-              />
-              <div>
-                <input
-                  type="text"
-                  placeholder="Coordinador/a de Carrera"
-                  value={formData.visado.coordinador}
-                  onChange={(e) => manejarCambioInput(e, "visado", null, "coordinador")}
-                  className="border p-2 rounded w-full"
-                />
-                {formData.visado.qrCoordinador && (
-                  <QRCodeCanvas value={formData.visado.qrCoordinador} size={100} className="mt-2" />
-                )}
-              </div>
-              <input
-                type="text"
-                placeholder="Fecha Coordinador"
-                value={formData.visado.fechaCoordinador}
-                onChange={(e) => manejarCambioInput(e, "visado", null, "fechaCoordinador")}
-                className="border p-2 rounded"
-              />
-              <div>
-                <input
-                  type="text"
-                  placeholder="Docente"
-                  value={formData.visado.docente}
-                  onChange={(e) => manejarCambioInput(e, "visado", null, "docente")}
-                  className="border p-2 rounded w-full"
-                />
-                {formData.visado.qrDocente && (
-                  <QRCodeCanvas value={formData.visado.qrDocente} size={100} className="mt-2" />
-                )}
-              </div>
-              <input
-                type="text"
-                placeholder="Fecha Docente"
-                value={formData.visado.fechaDocente}
-                onChange={(e) => manejarCambioInput(e, "visado", null, "fechaDocente")}
-                className="border p-2 rounded"
-              />
             </div>
 
             <div className="flex gap-4">
@@ -1052,6 +1077,8 @@ const Gestionsyllabus = () => {
           )}
         </>
       )}
+
+     
     </div>
   );
 };

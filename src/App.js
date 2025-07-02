@@ -25,7 +25,6 @@ import BoardComisionSilabos from "./components/board-comision-silabos.component"
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
-import login from "./assets/imagen.jpeg";
 // Importa la imagen
 import logo from "./unesum.jpeg";
 
