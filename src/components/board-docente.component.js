@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
-import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, ImageRun } from 'docx';
+import { Document, Packer, Paragraph, Table, TableCell, TableRow, WidthType, TextRun, ImageRun, AlignmentType, BorderStyle } from 'docx';
 import { saveAs } from 'file-saver';
 import QRCode from 'qrcode';
 import mammoth from 'mammoth';
+import Docxtemplater from 'docxtemplater';
+import PizZip from 'pizzip';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import './css/BoardDocente.css';
 
 const BoardDocente = () => {
@@ -56,6 +59,7 @@ const BoardDocente = () => {
   const [previewMode, setPreviewMode] = useState(false);
   const [qrCodes, setQrCodes] = useState({ decano: '', director: '', coordinador: '', docente: '' });
   const [error, setError] = useState('');
+  const [isLoadingWord, setIsLoadingWord] = useState(false);
 
   useEffect(() => {
     const generateQRCodes = async () => {
@@ -64,7 +68,7 @@ const BoardDocente = () => {
       for (const role of roles) {
         const qrText = `Firma ${role} para ${formData.asignatura} - ${formData.periodo}`;
         try {
-          const qrUrl = await QRCode.toDataURL(qrText);
+          const qrUrl = await QRCode.toDataURL(qrText, { width: 100, height: 100 });
           qrData[role] = qrUrl;
         } catch (err) {
           console.error('Error generating QR code:', err);
@@ -157,7 +161,7 @@ const BoardDocente = () => {
           .slice(1)
           .map((unitText, index) => ({
             nombre: `UT ${index + 1}`,
-            descripcion: unitText.trim(),
+            descripcion: unitText.trim().replace(/^[\d\s]+/, '').trim(),
           })) || [{ nombre: 'UT 1', descripcion: '' }],
         metodologia: text.match(/METODOLOGÍA\s*([\s\S]*?)PROCEDIMIENTOS/)?.[1]?.trim() || '',
         procedimientos: {
@@ -192,358 +196,102 @@ const BoardDocente = () => {
         },
       };
       setFormData(parsedData);
+      setError('');
     } catch (err) {
-      // No mostrar error, solo no hacer nada
+      setError('Error al procesar el archivo Word.');
       console.error(err);
     }
   };
 
   const exportToJSON = () => {
+    if (!formData.asignatura) {
+      setError('Por favor, complete el campo de asignatura antes de exportar.');
+      return;
+    }
     const json = JSON.stringify(formData, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
-    saveAs(blob, 'syllabus.json');
+    saveAs(blob, `${formData.asignatura}_syllabus.json`);
   };
 
-  const exportToWord = () => {
-    const doc = new Document({
-      sections: [
-        {
-          properties: { page: { margin: { top: 720, right: 720, bottom: 720, left: 720 } } },
-          children: [
-            new Paragraph({
-              children: [new TextRun({ text: 'PROGRAMA ANALÍTICO DE ASIGNATURA', bold: true, size: 28 })],
-              alignment: 'center',
-              spacing: { after: 400 },
-            }),
-            new Table({
-              width: { size: 100, type: WidthType.PERCENTAGE },
-              borders: {
-                top: { style: 'single', size: 4 },
-                bottom: { style: 'single', size: 4 },
-                left: { style: 'single', size: 4 },
-                right: { style: 'single', size: 4 },
-                insideHorizontal: { style: 'single', size: 4 },
-                insideVertical: { style: 'single', size: 4 },
-              },
-              rows: [
-                new TableRow({
-                  children: [
-                    new TableCell({
-                      children: [new Paragraph({ text: 'ASIGNATURA', bold: true })],
-                      width: { size: 25, type: WidthType.PERCENTAGE },
-                    }),
-                    new TableCell({
-                      children: [new Paragraph(formData.asignatura)],
-                      width: { size: 25, type: WidthType.PERCENTAGE },
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: 'PERIODO ACADÉMICO ORDINARIO (PAO)', bold: true })],
-                      width: { size: 25, type: WidthType.PERCENTAGE },
-                    }),
-                    new TableCell({
-                      children: [new Paragraph(formData.periodo)],
-                      width: { size: 25, type: WidthType.PERCENTAGE },
-                    }),
-                  ],
-                }),
-                new TableRow({
-                  children: [
-                    new TableCell({ children: [] }),
-                    new TableCell({ children: [] }),
-                    new TableCell({
-                      children: [new Paragraph({ text: 'NIVEL', bold: true })],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph(formData.nivel)],
-                    }),
-                  ],
-                }),
-                new TableRow({
-                  children: [
-                    new TableCell({
-                      children: [new Paragraph({ text: 'CARACTERIZACIÓN', bold: true })],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph(formData.caracterizacion)],
-                      columnSpan: 3,
-                    }),
-                  ],
-                }),
-                new TableRow({
-                  children: [
-                    new TableCell({
-                      children: [new Paragraph({ text: 'OBJETIVOS DE LA ASIGNATURA', bold: true })],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph(formData.objetivos)],
-                      columnSpan: 3,
-                    }),
-                  ],
-                }),
-                new TableRow({
-                  children: [
-                    new TableCell({
-                      children: [new Paragraph({ text: 'COMPETENCIAS', bold: true })],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph(formData.competencias)],
-                      columnSpan: 3,
-                    }),
-                  ],
-                }),
-              ],
-            }),
-            new Paragraph({
-              children: [new TextRun({ text: 'RESULTADOS DE APRENDIZAJE DE LA ASIGNATURA', bold: true, size: 24 })],
-              spacing: { before: 400, after: 200 },
-            }),
-            new Paragraph({
-              children: [new TextRun({ text: `Actitudinales: ${formData.resultados.actitudinales || 'N/A'}` })],
-              spacing: { after: 200 },
-            }),
-            new Paragraph({
-              children: [new TextRun({ text: `Cognitivos: ${formData.resultados.cognitivos}` })],
-              spacing: { after: 200 },
-            }),
-            new Paragraph({
-              children: [new TextRun({ text: `Procedimentales: ${formData.resultados.procedimentales}` })],
-              spacing: { after: 200 },
-            }),
-            new Paragraph({
-              children: [new TextRun({ text: 'CONTENIDOS DE LA ASIGNATURA', bold: true, size: 24 })],
-              spacing: { before: 400, after: 200 },
-            }),
-            new Table({
-              width: { size: 100, type: WidthType.PERCENTAGE },
-              borders: {
-                top: { style: 'single', size: 4 },
-                bottom: { style: 'single', size: 4 },
-                left: { style: 'single', size: 4 },
-                right: { style: 'single', size: 4 },
-                insideHorizontal: { style: 'single', size: 4 },
-                insideVertical: { style: 'single', size: 4 },
-              },
-              rows: [
-                new TableRow({
-                  children: [
-                    new TableCell({
-                      children: [new Paragraph({ text: 'UNIDADES TEMÁTICAS', bold: true })],
-                      width: { size: 30, type: WidthType.PERCENTAGE },
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: 'DESCRIPCIÓN', bold: true })],
-                      width: { size: 70, type: WidthType.PERCENTAGE },
-                    }),
-                  ],
-                }),
-                ...formData.unidades.map((unidad) =>
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        children: [new Paragraph(unidad.nombre)],
-                      }),
-                      new TableCell({
-                        children: [new Paragraph(unidad.descripcion)],
-                      }),
-                    ],
-                  })
-                ),
-              ],
-            }),
-            new Paragraph({
-              children: [new TextRun({ text: 'METODOLOGÍA', bold: true, size: 24 })],
-              spacing: { before: 400, after: 200 },
-            }),
-            new Paragraph({
-              children: [new TextRun({ text: formData.metodologia || 'N/A' })],
-              spacing: { after: 200 },
-            }),
-            new Paragraph({
-              children: [new TextRun({ text: 'PROCEDIMIENTOS DE EVALUACIÓN', bold: true, size: 24 })],
-              spacing: { before: 400, after: 200 },
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: 'Valores en:' }),
-                new TextRun({ text: '\nDocencia: ' }),
-                new TextRun({ text: formData.procedimientos.docencia || 'N/A' }),
-                new TextRun({ text: '\nPrácticas Formativas de Aplicación y Experimentación: ' }),
-                new TextRun({ text: formData.procedimientos.practicas || 'N/A' }),
-                new TextRun({ text: '\nTrabajo Autónomo: ' }),
-                new TextRun({ text: formData.procedimientos.autonomo || 'N/A' }),
-                new TextRun({ text: '\nExamen: ' }),
-                new TextRun({ text: formData.procedimientos.examen }),
-              ],
-              spacing: { after: 200 },
-            }),
-            new Paragraph({
-              children: [new TextRun({ text: 'BIBLIOGRAFÍA - FUENTES DE CONSULTA', bold: true, size: 24 })],
-              spacing: { before: 400, after: 200 },
-            }),
-            new Paragraph({
-              children: [new TextRun({ text: 'BIBLIOGRAFÍA BÁSICA', bold: true })],
-              spacing: { after: 200 },
-            }),
-            ...formData.bibliografia.basica.map((item) =>
-              new Paragraph({
-                children: [new TextRun({ text: item })],
-                bullet: { level: 0 },
-                spacing: { after: 100 },
-              })
-            ),
-            new Paragraph({
-              children: [new TextRun({ text: 'BIBLIOGRAFÍA COMPLEMENTARIA', bold: true })],
-              spacing: { after: 200 },
-            }),
-            ...formData.bibliografia.complementaria.map((item) =>
-              new Paragraph({
-                children: [new TextRun({ text: item })],
-                bullet: { level: 0 },
-                spacing: { after: 100 },
-              })
-            ),
-            new Paragraph({
-              children: [new TextRun({ text: 'VISADO:', bold: true, size: 24 })],
-              spacing: { before: 400, after: 200 },
-            }),
-            new Table({
-              width: { size: 100, type: WidthType.PERCENTAGE },
-              borders: {
-                top: { style: 'single', size: 4 },
-                bottom: { style: 'single', size: 4 },
-                left: { style: 'single', size: 4 },
-                right: { style: 'single', size: 4 },
-                insideHorizontal: { style: 'single', size: 4 },
-                insideVertical: { style: 'single', size: 4 },
-              },
-              rows: [
-                new TableRow({
-                  children: [
-                    new TableCell({
-                      children: [new Paragraph({ text: 'DECANO/A DE FACULTAD', bold: true })],
-                      width: { size: 25, type: WidthType.PERCENTAGE },
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: 'DIRECTOR/A ACADÉMICO/A', bold: true })],
-                      width: { size: 25, type: WidthType.PERCENTAGE },
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: 'COORDINADOR/A DE CARRERA', bold: true })],
-                      width: { size: 25, type: WidthType.PERCENTAGE },
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: 'DOCENTE', bold: true })],
-                      width: { size: 25, type: WidthType.PERCENTAGE },
-                    }),
-                  ],
-                }),
-                new TableRow({
-                  children: [
-                    new TableCell({
-                      children: [
-                        new Paragraph({
-                          text: '',
-                          children: [
-                            new ImageRun({
-                              data: qrCodes.decano,
-                              transformation: { width: 100, height: 100 },
-                            }),
-                          ],
-                        }),
-                      ],
-                    }),
-                    new TableCell({
-                      children: [
-                        new Paragraph({
-                          text: '',
-                          children: [
-                            new ImageRun({
-                              data: qrCodes.director,
-                              transformation: { width: 100, height: 100 },
-                            }),
-                          ],
-                        }),
-                      ],
-                    }),
-                    new TableCell({
-                      children: [
-                        new Paragraph({
-                          text: '',
-                          children: [
-                            new ImageRun({
-                              data: qrCodes.coordinador,
-                              transformation: { width: 100, height: 100 },
-                            }),
-                          ],
-                        }),
-                      ],
-                    }),
-                    new TableCell({
-                      children: [
-                        new Paragraph({
-                          text: '',
-                          children: [
-                            new ImageRun({
-                              data: qrCodes.docente,
-                              transformation: { width: 100, height: 100 },
-                            }),
-                          ],
-                        }),
-                      ],
-                    }),
-                  ],
-                }),
-                new TableRow({
-                  children: [
-                    new TableCell({
-                      children: [new Paragraph({ text: 'Fecha:', bold: true })],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph(formData.visado.fechas.decano || startDatesDB[formData.periodo] || '')],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph({ text: 'Fecha:', bold: true })],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph(formData.visado.fechas.director || startDatesDB[formData.periodo] || '')],
-                    }),
-                  ],
-                }),
-                new TableRow({
-                  children: [
-                    new TableCell({ children: [] }),
-                    new TableCell({ children: [] }),
-                    new TableCell({
-                      children: [new Paragraph({ text: 'Fecha:', bold: true })],
-                    }),
-                    new TableCell({
-                      children: [new Paragraph(formData.visado.fechas.coordinador || startDatesDB[formData.periodo] || '')],
-                    }),
-                  ],
-                }),
-                new TableRow({
-                  children: [
-                    new TableCell({ children: [] }),
-                    new TableCell({ children: [] }),
-                    new TableCell({ children: [] }),
-                    new TableCell({
-                      children: [new Paragraph(formData.visado.fechas.docente || startDatesDB[formData.periodo] || '')],
-                    }),
-                  ],
-                }),
-              ],
-            }),
-          ],
-        },
-      ],
-    });
+  const exportToWord = async () => {
+    if (!formData.asignatura) {
+      setError('Por favor, complete el campo de asignatura antes de exportar.');
+      return;
+    }
+    
+    setIsLoadingWord(true);
+    try {
+      const response = await fetch('/Anexo No. 1 Formato Programa Analítico.docx');
+      if (!response.ok) {
+        throw new Error(`No se pudo cargar la plantilla: ${response.statusText}`);
+      }
+      const arrayBuffer = await response.arrayBuffer();
+      const zip = new PizZip(arrayBuffer);
+      const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
 
-    Packer.toBlob(doc).then((blob) => {
-      saveAs(blob, 'syllabus.docx');
-    });
+      const data = {
+        asignatura: formData.asignatura || "N/A",
+        periodo: formData.periodo || "N/A",
+        nivel: formData.nivel || "N/A",
+        caracterizacion: formData.caracterizacion || "N/A",
+        objetivos: formData.objetivos || "N/A",
+        competencias: formData.competencias || "N/A",
+        resultadosActitudinales: formData.resultados.actitudinales || "N/A",
+        resultadosCognitivos: formData.resultados.cognitivos || "N/A",
+        resultadosProcedimentales: formData.resultados.procedimentales || "N/A",
+        metodologia: formData.metodologia || "N/A",
+        procedimientosDocencia: formData.procedimientos.docencia || "____",
+        procedimientosPracticas: formData.procedimientos.practicas || "____",
+        procedimientosAutonomo: formData.procedimientos.autonomo || "____",
+        procedimientosExamen: formData.procedimientos.examen || "4",
+        bibliografiaBasica: formData.bibliografia.basica.length > 0
+          ? formData.bibliografia.basica.map((item, index) => `B.B.${index + 1}. ${item || ""}`).join('\n')
+          : "N/A",
+        bibliografiaComplementaria: formData.bibliografia.complementaria.length > 0
+          ? formData.bibliografia.complementaria.map((item, index) => `B.C.${index + 1}. ${item || ""}`).join('\n')
+          : "N/A",
+        unidades: formData.unidades.map((u) => ({
+          nombre: u.nombre || "N/A",
+          descripcion: u.descripcion || "N/A",
+        })),
+        visado: {
+          decano: formData.visado.decano || "N/A",
+          director: formData.visado.director || "N/A",
+          coordinador: formData.visado.coordinador || "N/A",
+          docente: formData.visado.docente || "N/A",
+          fechaDecano: formData.visado.fechas.decano || startDatesDB[formData.periodo] || "N/A",
+          fechaDirector: formData.visado.fechas.director || startDatesDB[formData.periodo] || "N/A",
+          fechaCoordinador: formData.visado.fechas.coordinador || startDatesDB[formData.periodo] || "N/A",
+          fechaDocente: formData.visado.fechas.docente || startDatesDB[formData.periodo] || "N/A",
+          qrDecano: qrCodes.decano ? "QR_DECANO" : "N/A",
+          qrDirector: qrCodes.director ? "QR_DIRECTOR" : "N/A",
+          qrCoordinador: qrCodes.coordinador ? "QR_COORDINADOR" : "N/A",
+          qrDocente: qrCodes.docente ? "QR_DOCENTE" : "N/A",
+        },
+      };
+
+      doc.setData(data);
+      doc.render();
+      const out = doc.getZip().generate({
+        type: "blob",
+        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+      const nombreArchivo = `programa_analitico_${formData.asignatura.replace(/\s+/g, '_')}_${Date.now()}.docx`;
+      saveAs(out, nombreArchivo);
+      setError("");
+    } catch (err) {
+      setError(`Error al exportar el documento: ${err.message}`);
+      console.error(err);
+    } finally {
+      setIsLoadingWord(false);
+    }
   };
 
   const exportToPDF = () => {
+    if (!formData.asignatura) {
+      setError('Por favor, complete el campo de asignatura antes de exportar.');
+      return;
+    }
     const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
     let y = 40;
     const addText = (text, options = {}) => {
@@ -563,15 +311,15 @@ const BoardDocente = () => {
 
     doc.autoTable({
       startY: y,
-      head: [['ASIGNATURA', formData.asignatura, 'PERIODO ACADÉMICO ORDINARIO (PAO)', formData.periodo]],
+      head: [['ASIGNATURA', formData.asignatura || 'N/A', 'PERIODO ACADÉMICO ORDINARIO (PAO)', formData.periodo || 'N/A']],
       body: [
-        ['', '', 'NIVEL', formData.nivel],
-        ['CARACTERIZACIÓN', { content: formData.caracterizacion, colSpan: 3 }],
-        ['OBJETIVOS DE LA ASIGNATURA', { content: formData.objetivos, colSpan: 3 }],
-        ['COMPETENCIAS', { content: formData.competencias, colSpan: 3 }],
+        ['', '', 'NIVEL', formData.nivel || 'N/A'],
+        ['CARACTERIZACIÓN', { content: formData.caracterizacion || 'N/A', colSpan: 3 }],
+        ['OBJETIVOS DE LA ASIGNATURA', { content: formData.objetivos || 'N/A', colSpan: 3 }],
+        ['COMPETENCIAS', { content: formData.competencias || 'N/A', colSpan: 3 }],
       ],
       styles: { fontSize: 10, cellPadding: 5 },
-      headStyles: { fillColor: [200, 200, 200], fontStyle: 'bold' },
+      headStyles: { fillColor: [0, 87, 184], textColor: [255, 255, 255], fontStyle: 'bold' },
       columnStyles: {
         0: { cellWidth: 120 },
         1: { cellWidth: 175 },
@@ -582,18 +330,18 @@ const BoardDocente = () => {
     y = doc.lastAutoTable.finalY + 20;
 
     addText('RESULTADOS DE APRENDIZAJE DE LA ASIGNATURA', { bold: true, size: 12 });
-    addText(`Actitudinales: ${formData.resultados.actitudinales || 'N/A'}`);
-    addText(`Cognitivos: ${formData.resultados.cognitivos}`);
-    addText(`Procedimentales: ${formData.resultados.procedimentales}`);
+    addText(`Actitudinales (valores y habilidades blandas): ${formData.resultados.actitudinales || 'N/A'}`);
+    addText(`Cognitivos: ${formData.resultados.cognitivos || 'N/A'}`);
+    addText(`Procedimentales: ${formData.resultados.procedimentales || 'N/A'}`);
     y += 10;
 
     addText('CONTENIDOS DE LA ASIGNATURA', { bold: true, size: 12 });
     doc.autoTable({
       startY: y,
       head: [['UNIDADES TEMÁTICAS', 'DESCRIPCIÓN']],
-      body: formData.unidades.map((unidad) => [unidad.nombre, unidad.descripcion]),
+      body: formData.unidades.map((unidad) => [unidad.nombre || 'N/A', unidad.descripcion || 'N/A']),
       styles: { fontSize: 10, cellPadding: 5 },
-      headStyles: { fillColor: [200, 200, 200], fontStyle: 'bold' },
+      headStyles: { fillColor: [0, 87, 184], textColor: [255, 255, 255], fontStyle: 'bold' },
       columnStyles: { 0: { cellWidth: 150 }, 1: { cellWidth: 445 } },
     });
     y = doc.lastAutoTable.finalY + 20;
@@ -603,44 +351,45 @@ const BoardDocente = () => {
     y += 10;
 
     addText('PROCEDIMIENTOS DE EVALUACIÓN', { bold: true, size: 12 });
-    addText(`Docencia: ${formData.procedimientos.docencia || 'N/A'}`);
-    addText(`Prácticas Formativas: ${formData.procedimientos.practicas || 'N/A'}`);
-    addText(`Trabajo Autónomo: ${formData.procedimientos.autonomo || 'N/A'}`);
-    addText(`Examen: ${formData.procedimientos.examen}`);
+    addText(`Valores en:`);
+    addText(`Docencia: ${formData.procedimientos.docencia || '____'}`);
+    addText(`Prácticas Formativas de Aplicación y Experimentación: ${formData.procedimientos.practicas || '____'}`);
+    addText(`Trabajo Autónomo: ${formData.procedimientos.autonomo || '____'}`);
+    addText(`Examen: ${formData.procedimientos.examen || '4'}`);
     y += 10;
 
     addText('BIBLIOGRAFÍA - FUENTES DE CONSULTA', { bold: true, size: 12 });
     addText('BIBLIOGRAFÍA BÁSICA', { bold: true });
-    formData.bibliografia.basica.forEach((item) => addText(`- ${item}`));
+    formData.bibliografia.basica.forEach((item, index) => addText(`- B.B.${index + 1}. ${item || ''}`));
     addText('BIBLIOGRAFÍA COMPLEMENTARIA', { bold: true });
-    formData.bibliografia.complementaria.forEach((item) => addText(`- ${item}`));
+    formData.bibliografia.complementaria.forEach((item, index) => addText(`- B.C.${index + 1}. ${item || ''}`));
     y += 10;
 
     addText('VISADO:', { bold: true, size: 12 });
     doc.autoTable({
       startY: y,
-      head: [['DECANO/A', 'DIRECTOR/A ACADÉMICO/A', 'COORDINADOR/A DE CARRERA', 'DOCENTE']],
+      head: [['DECANO/A DE FACULTAD', 'DIRECTOR/A ACADÉMICO/A', 'COORDINADOR/A DE CARRERA', 'DOCENTE']],
       body: [
         [
-          { content: '', image: qrCodes.decano, imageWidth: 80, imageHeight: 80 },
-          { content: '', image: qrCodes.director, imageWidth: 80, imageHeight: 80 },
-          { content: '', image: qrCodes.coordinador, imageWidth: 80, imageHeight: 80 },
-          { content: '', image: qrCodes.docente, imageWidth: 80, imageHeight: 80 },
+          { content: formData.visado.decano || '', image: qrCodes.decano, imageWidth: 80, imageHeight: 80 },
+          { content: formData.visado.director || '', image: qrCodes.director, imageWidth: 80, imageHeight: 80 },
+          { content: formData.visado.coordinador || '', image: qrCodes.coordinador, imageWidth: 80, imageHeight: 80 },
+          { content: formData.visado.docente || '', image: qrCodes.docente, imageWidth: 80, imageHeight: 80 },
         ],
-        ['Fecha:', formData.visado.fechas.decano || startDatesDB[formData.periodo] || '', 'Fecha:', formData.visado.fechas.director || startDatesDB[formData.periodo] || ''],
-        ['', '', 'Fecha:', formData.visado.fechas.coordinador || startDatesDB[formData.periodo] || ''],
-        ['', '', '', formData.visado.fechas.docente || startDatesDB[formData.periodo] || ''],
+        [
+          `Fecha: ${formData.visado.fechas.decano || startDatesDB[formData.periodo] || 'N/A'}`,
+          `Fecha: ${formData.visado.fechas.director || startDatesDB[formData.periodo] || 'N/A'}`,
+          `Fecha: ${formData.visado.fechas.coordinador || startDatesDB[formData.periodo] || 'N/A'}`,
+          `Fecha: ${formData.visado.fechas.docente || startDatesDB[formData.periodo] || 'N/A'}`,
+        ],
       ],
       styles: { fontSize: 10, cellPadding: 5 },
-      headStyles: { fillColor: [200, 200, 200], fontStyle: 'bold' },
+      headStyles: { fillColor: [0, 87, 184], textColor: [255, 255, 255], fontStyle: 'bold' },
       columnStyles: { 0: { cellWidth: 149 }, 1: { cellWidth: 149 }, 2: { cellWidth: 149 }, 3: { cellWidth: 149 } },
     });
 
-    doc.save('syllabus.pdf');
-  };
-
-  const togglePreview = () => {
-    setPreviewMode(!previewMode);
+    doc.save(`${formData.asignatura}_syllabus.pdf`);
+    setError('');
   };
 
   const loadJSON = (e) => {
@@ -651,7 +400,7 @@ const BoardDocente = () => {
     reader.onload = (event) => {
       try {
         const jsonData = JSON.parse(event.target.result);
-        if (jsonData.asignatura !== selectedSubject) {
+        if (jsonData.asignatura !== selectedSubject && selectedSubject) {
           setError('La asignatura del JSON no coincide con la seleccionada.');
           return;
         }
@@ -665,460 +414,514 @@ const BoardDocente = () => {
     reader.readAsText(file);
   };
 
+  const togglePreview = () => {
+    setPreviewMode(!previewMode);
+  };
+
   const renderPreview = () => (
-    <div className="p-6 bg-gradient-to-br from-gray-100 to-gray-50 border border-gray-200 rounded-xl shadow-lg text-black">
-      <h1 className="text-3xl font-bold text-center mb-6 futuristic-label" style={{ color: 'var(--color-primary, #2E7D32)' }}>PROGRAMA ANALÍTICO DE ASIGNATURA</h1>
-      <table className="w-full border-collapse mb-6 bg-white rounded-lg overflow-hidden shadow-md">
-        <tbody>
-          <tr className="bg-gray-100">
-            <td className="border border-gray-300 p-4 font-semibold text-gray-700 w-1/4">ASIGNATURA</td>
-            <td className="border border-gray-300 p-4 w-1/4 text-black">{formData.asignatura}</td>
-            <td className="border border-gray-300 p-4 font-semibold text-gray-700 w-1/4">PERIODO ACADÉMICO ORDINARIO (PAO)</td>
-            <td className="border border-gray-300 p-4 w-1/4 text-black">{formData.periodo}</td>
-          </tr>
-          <tr>
-            <td className="border border-gray-300 p-4"></td>
-            <td className="border border-gray-300 p-4"></td>
-            <td className="border border-gray-300 p-4 font-semibold text-gray-700">NIVEL</td>
-            <td className="border border-gray-300 p-4 text-black">{formData.nivel}</td>
-          </tr>
-          <tr>
-            <td className="border border-gray-300 p-4 font-semibold text-gray-700">CARACTERIZACIÓN</td>
-            <td className="border border-gray-300 p-4 text-black" colSpan={3}>{formData.caracterizacion}</td>
-          </tr>
-          <tr>
-            <td className="border border-gray-300 p-4 font-semibold text-gray-700">OBJETIVOS DE LA ASIGNATURA</td>
-            <td className="border border-gray-300 p-4 text-black" colSpan={3}>{formData.objetivos}</td>
-          </tr>
-          <tr>
-            <td className="border border-gray-300 p-4 font-semibold text-gray-700">COMPETENCIAS</td>
-            <td className="border border-gray-300 p-4 text-black" colSpan={3}>{formData.competencias}</td>
-          </tr>
-        </tbody>
-      </table>
-      <h2 className="text-2xl font-semibold mb-4 mt-6 futuristic-label" style={{ color: 'var(--color-primary, #2E7D32)' }}>RESULTADOS DE APRENDIZAJE DE LA ASIGNATURA</h2>
-      <p className="mb-2"><strong>Actitudinales:</strong> <span className="text-black">{formData.resultados.actitudinales || 'N/A'}</span></p>
-      <p className="mb-2"><strong>Cognitivos:</strong> <span className="text-black">{formData.resultados.cognitivos}</span></p>
-      <p className="mb-2"><strong>Procedimentales:</strong> <span className="text-black">{formData.resultados.procedimentales}</span></p>
-      <h2 className="text-2xl font-semibold mb-4 mt-6 futuristic-label" style={{ color: 'var(--color-primary, #2E7D32)' }}>CONTENIDOS DE LA ASIGNATURA</h2>
-      <table className="w-full border-collapse bg-white rounded-lg overflow-hidden shadow-md">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border border-gray-300 p-4 text-gray-700 w-1/3">UNIDADES TEMÁTICAS</th>
-            <th className="border border-gray-300 p-4 text-gray-700 w-2/3">DESCRIPCIÓN</th>
-          </tr>
-        </thead>
-        <tbody>
-          {formData.unidades.map((unidad, index) => (
-            <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
-              <td className="border border-gray-300 p-4 text-black">{unidad.nombre}</td>
-              <td className="border border-gray-300 p-4 text-black">{unidad.descripcion}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <h2 className="text-2xl font-semibold mb-4 mt-6 futuristic-label" style={{ color: 'var(--color-primary, #2E7D32)' }}>METODOLOGÍA</h2>
-      <p className="mb-4 text-black">{formData.metodologia || 'N/A'}</p>
-      <h2 className="text-2xl font-semibold mb-4 mt-6 futuristic-label" style={{ color: 'var(--color-primary, #2E7D32)' }}>PROCEDIMIENTOS DE EVALUACIÓN</h2>
-      <p className="mb-2"><strong>Docencia:</strong> <span className="text-black">{formData.procedimientos.docencia || 'N/A'}</span></p>
-      <p className="mb-2"><strong>Prácticas Formativas:</strong> <span className="text-black">{formData.procedimientos.practicas || 'N/A'}</span></p>
-      <p className="mb-2"><strong>Trabajo Autónomo:</strong> <span className="text-black">{formData.procedimientos.autonomo || 'N/A'}</span></p>
-      <p className="mb-2"><strong>Examen:</strong> <span className="text-black">{formData.procedimientos.examen}</span></p>
-      <h2 className="text-2xl font-semibold mb-4 mt-6 futuristic-label" style={{ color: 'var(--color-primary, #2E7D32)' }}>BIBLIOGRAFÍA - FUENTES DE CONSULTA</h2>
-      <p className="font-semibold mb-2" style={{ color: 'var(--color-primary, #2E7D32)' }}>BIBLIOGRAFÍA BÁSICA</p>
-      <ul className="list-disc list-inside mb-4 pl-5">
-        {formData.bibliografia.basica.map((item, index) => (
-          <li key={index} className="mb-1 text-black">{item}</li>
-        ))}
-      </ul>
-      <p className="font-semibold mb-2" style={{ color: 'var(--color-primary, #2E7D32)' }}>BIBLIOGRAFÍA COMPLEMENTARIA</p>
-      <ul className="list-disc list-inside mb-4 pl-5">
-        {formData.bibliografia.complementaria.map((item, index) => (
-          <li key={index} className="mb-1 text-black">{item}</li>
-        ))}
-      </ul>
-      <h2 className="text-2xl font-semibold mb-4 mt-6 futuristic-label" style={{ color: 'var(--color-primary, #2E7D32)' }}>VISADO:</h2>
-      <div className="visado-row">
-        {['decano', 'director', 'coordinador', 'docente'].map((role) => (
-          <div className="visado-col" key={role}>
-            <div className="visado-nombre futuristic-label" style={{ color: 'var(--color-primary, #2E7D32)' }}>{role.charAt(0).toUpperCase() + role.slice(1)}</div>
-            <img
-              src={qrCodes[role]}
-              alt={`QR ${role}`}
-              className="visado-qr futuristic-qr"
-              width="80"
-            />
-            <div className="visado-nombre-preview text-black">{formData.visado[role]}</div>
-            <div className="visado-fecha-preview text-black">{formData.visado.fechas[role] || startDatesDB[formData.periodo] || ''}</div>
+    <div className="syllabus-container p-4">
+      <div className="card shadow-lg">
+        <div className="card-header text-white text-center">
+          <h2 className="mb-0">Programa Analítico de Asignatura</h2>
+        </div>
+        <div className="card-body">
+          {error && (
+            <div className="alert alert-danger mb-4" role="alert">
+              {error}
+            </div>
+          )}
+          <div className="table-responsive mb-4">
+            <table className="table table-bordered table-hover">
+              <tbody>
+                <tr className="table-primary">
+                  <th scope="row" className="w-25">Asignatura</th>
+                  <td className="w-25">{formData.asignatura || 'N/A'}</td>
+                  <th className="w-25">Periodo Académico (PAO)</th>
+                  <td className="w-25">{formData.periodo || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td></td>
+                  <th>Nivel</th>
+                  <td>{formData.nivel || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <th>Caracterización</th>
+                  <td colSpan={3}>{formData.caracterizacion || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <th>Objetivos de la Asignatura</th>
+                  <td colSpan={3}>{formData.objetivos || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <th>Competencias</th>
+                  <td colSpan={3}>{formData.competencias || 'N/A'}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        ))}
+
+          <h3 className="mt-4 mb-3">Resultados de Aprendizaje</h3>
+          <ul className="list-group mb-4">
+            <li className="list-group-item"><strong>Actitudinales (valores y habilidades blandas):</strong> {formData.resultados.actitudinales || 'N/A'}</li>
+            <li className="list-group-item"><strong>Cognitivos:</strong> {formData.resultados.cognitivos || 'N/A'}</li>
+            <li className="list-group-item"><strong>Procedimentales:</strong> {formData.resultados.procedimentales || 'N/A'}</li>
+          </ul>
+
+          <h3 className="mt-4 mb-3">Contenidos de la Asignatura</h3>
+          <div className="table-responsive mb-4">
+            <table className="table table-bordered table-hover">
+              <thead className="table-primary">
+                <tr>
+                  <th className="w-25">Unidades Temáticas</th>
+                  <th>Descripción</th>
+                </tr>
+              </thead>
+              <tbody>
+                {formData.unidades.map((unidad, index) => (
+                  <tr key={index}>
+                    <td>{unidad.nombre || 'N/A'}</td>
+                    <td>{unidad.descripcion || 'N/A'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <h3 className="mt-4 mb-3">Metodología</h3>
+          <p className="mb-4">{formData.metodologia || 'N/A'}</p>
+
+          <h3 className="mt-4 mb-3">Procedimientos de Evaluación</h3>
+          <ul className="list-group mb-4">
+            <li className="list-group-item"><strong>Valores en:</strong></li>
+            <li className="list-group-item"><strong>Docencia:</strong> {formData.procedimientos.docencia || '____'}</li>
+            <li className="list-group-item"><strong>Prácticas Formativas de Aplicación y Experimentación:</strong> {formData.procedimientos.practicas || '____'}</li>
+            <li className="list-group-item"><strong>Trabajo Autónomo:</strong> {formData.procedimientos.autonomo || '____'}</li>
+            <li className="list-group-item"><strong>Examen:</strong> {formData.procedimientos.examen || '4'}</li>
+          </ul>
+
+          <h3 className="mt-4 mb-3">Bibliografía - Fuentes de Consulta</h3>
+          <div className="row">
+            <div className="col-md-6">
+              <h4>Bibliografía Básica</h4>
+              <ul className="list-group mb-4">
+                {formData.bibliografia.basica.map((item, index) => (
+                  <li key={index} className="list-group-item">{`- B.B.${index + 1}. ${item || ''}`}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="col-md-6">
+              <h4>Bibliografía Complementaria</h4>
+              <ul className="list-group mb-4">
+                {formData.bibliografia.complementaria.map((item, index) => (
+                  <li key={index} className="list-group-item">{`- B.C.${index + 1}. ${item || ''}`}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <h3 className="mt-4 mb-3">Visado</h3>
+          <div className="visado-row">
+            {['decano', 'director', 'coordinador', 'docente'].map((role) => (
+              <div className="visado-col" key={role}>
+                <h5 className="text-capitalize">{role}</h5>
+                <img src={qrCodes[role]} alt={`QR ${role}`} className="visado-qr" />
+                <p>{formData.visado[role] || 'N/A'}</p>
+                <p>{formData.visado.fechas[role] || startDatesDB[formData.periodo] || 'N/A'}</p>
+              </div>
+            ))}
+          </div>
+
+          <button className="btn btn-primary mt-4" onClick={togglePreview}>
+            <i className="bi bi-pencil-square me-2"></i>Editar
+          </button>
+        </div>
       </div>
-      <button
-        onClick={togglePreview}
-        className="mt-6 futuristic-btn"
-      >
-        Editar
-      </button>
     </div>
   );
 
   return (
-    <div className="board-docente-container">
+    <div className="syllabus-container p-4">
       {previewMode ? (
         renderPreview()
       ) : (
-        <div className="board-docente-card">
-          <h1 className="board-docente-title">
-            <span className="material-icons board-docente-icon">menu_book</span>
-            PROGRAMA ANALÍTICO DE ASIGNATURA
-          </h1>
-          {/* Sección: Selección de Asignatura */}
-          <div className="board-docente-section">
-            <label className="board-docente-label">
-              Seleccionar Asignatura
-            </label>
-            <select
-              value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              className="board-docente-select"
-            >
-              <option value="">Seleccione una asignatura</option>
-              {subjectsDB.map((subject) => (
-                <option key={subject} value={subject}>{subject}</option>
-              ))}
-            </select>
+        <div className="card shadow-lg">
+          <div className="card-header text-white text-center">
+            <h2 className="mb-0">
+              <i className="bi bi-book me-2"></i>Programa Analítico de Asignatura
+            </h2>
           </div>
-          {/* Sección: Cargar Word */}
-          <div className="board-docente-section">
-            <label className="board-docente-label">
-              Cargar Documento Word
-            </label>
-            <input
-              type="file"
-              accept=".docx"
-              onChange={handleFileUpload}
-              className="board-docente-input"
-            />
-            {fileName && (
-              <div className="board-docente-file-info">
-                Archivo cargado: {fileName}
+          <div className="card-body">
+            {error && (
+              <div className="alert alert-danger mb-4" role="alert">
+                {error}
               </div>
             )}
-          </div>
-          {/* Sección: Cargar JSON */}
-          <div className="board-docente-section">
-            <label className="board-docente-label">
-              Cargar JSON
-            </label>
-            <input
-              type="file"
-              accept=".json"
-              onChange={loadJSON}
-              className="board-docente-input"
-            />
-          </div>
-          {/* Sección: Datos principales */}
-          <div className="board-docente-section">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="board-docente-label">Asignatura</label>
-                <input
-                  type="text"
-                  value={formData.asignatura}
-                  onChange={(e) => handleInputChange(e, null, 'asignatura')}
-                  className="board-docente-input"
-                  readOnly={!!selectedSubject}
-                />
-              </div>
-              <div>
-                <label className="board-docente-label">Periodo Académico Ordinario (PAO)</label>
-                <select
-                  value={formData.periodo}
-                  onChange={(e) => handleInputChange(e, null, 'periodo')}
-                  className="board-docente-select"
-                >
-                  <option value="">Seleccione un periodo</option>
-                  {periodsDB.map((period) => (
-                    <option key={period} value={period}>{period}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="board-docente-label">Nivel</label>
-                <select
-                  value={formData.nivel}
-                  onChange={(e) => handleInputChange(e, null, 'nivel')}
-                  className="board-docente-select"
-                >
-                  <option value="">Seleccione un nivel</option>
-                  {levelsDB.map((level) => (
-                    <option key={level} value={level}>{level}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-          {/* Sección: Caracterización, Objetivos, Competencias */}
-          <div className="board-docente-section">
-            <label className="board-docente-label">Caracterización</label>
-            <textarea
-              value={formData.caracterizacion}
-              onChange={(e) => handleInputChange(e, null, 'caracterizacion')}
-              className="board-docente-textarea"
-              rows="3"
-            />
-            <label className="board-docente-label">Objetivos de la Asignatura</label>
-            <textarea
-              value={formData.objetivos}
-              onChange={(e) => handleInputChange(e, null, 'objetivos')}
-              className="board-docente-textarea"
-              rows="3"
-            />
-            <label className="board-docente-label">Competencias</label>
-            <textarea
-              value={formData.competencias}
-              onChange={(e) => handleInputChange(e, null, 'competencias')}
-              className="board-docente-textarea"
-              rows="3"
-            />
-          </div>
-          {/* Sección: Resultados de Aprendizaje */}
-          <div className="board-docente-section">
-            <label className="board-docente-label">Resultados de Aprendizaje</label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="board-docente-label">Actitudinales</label>
-                <textarea
-                  value={formData.resultados.actitudinales}
-                  onChange={(e) => handleInputChange(e, 'resultados', 'actitudinales')}
-                  className="board-docente-textarea"
-                  rows="2"
-                />
-              </div>
-              <div>
-                <label className="board-docente-label">Cognitivos</label>
-                <textarea
-                  value={formData.resultados.cognitivos}
-                  onChange={(e) => handleInputChange(e, 'resultados', 'cognitivos')}
-                  className="board-docente-textarea"
-                  rows="2"
-                />
-              </div>
-              <div>
-                <label className="board-docente-label">Procedimentales</label>
-                <textarea
-                  value={formData.resultados.procedimentales}
-                  onChange={(e) => handleInputChange(e, 'resultados', 'procedimentales')}
-                  className="board-docente-textarea"
-                  rows="2"
-                />
-              </div>
-            </div>
-          </div>
-          {/* Sección: Unidades Temáticas */}
-          <div className="board-docente-section">
-            <label className="board-docente-label">Contenidos de la Asignatura</label>
-            {formData.unidades.map((unidad, index) => (
-              <div key={index} className="board-docente-unidad">
-                <input
-                  type="text"
-                  value={unidad.nombre}
-                  readOnly
-                  className="board-docente-input"
-                />
-                <textarea
-                  value={unidad.descripcion}
-                  onChange={(e) => handleInputChange(e, 'unidades', 'descripcion', index)}
-                  className="board-docente-textarea"
-                  rows="2"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeUnit(index)}
-                  className="board-docente-btn board-docente-btn-danger futuristic-btn"
-                  title="Eliminar Unidad"
-                >
-                  <span className="material-icons board-docente-icon">delete</span>
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={addUnit}
-              className="board-docente-btn futuristic-btn"
-            >
-              Agregar Unidad
-            </button>
-          </div>
-          {/* Sección: Metodología */}
-          <div className="board-docente-section">
-            <label className="board-docente-label">Metodología</label>
-            <textarea
-              value={formData.metodologia}
-              onChange={(e) => handleInputChange(e, null, 'metodologia')}
-              className="board-docente-textarea"
-              rows="3"
-            />
-          </div>
-          {/* Sección: Procedimientos de Evaluación */}
-          <div className="board-docente-section">
-            <label className="board-docente-label">Procedimientos de Evaluación</label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="board-docente-label">Docencia</label>
-                <input
-                  type="text"
-                  value={formData.procedimientos.docencia}
-                  onChange={(e) => handleInputChange(e, 'procedimientos', 'docencia')}
-                  className="board-docente-input"
-                />
-              </div>
-              <div>
-                <label className="board-docente-label">Prácticas Formativas</label>
-                <input
-                  type="text"
-                  value={formData.procedimientos.practicas}
-                  onChange={(e) => handleInputChange(e, 'procedimientos', 'practicas')}
-                  className="board-docente-input"
-                />
-              </div>
-              <div>
-                <label className="board-docente-label">Trabajo Autónomo</label>
-                <input
-                  type="text"
-                  value={formData.procedimientos.autonomo}
-                  onChange={(e) => handleInputChange(e, 'procedimientos', 'autonomo')}
-                  className="board-docente-input"
-                />
-              </div>
-              <div>
-                <label className="board-docente-label">Examen</label>
-                <input
-                  type="text"
-                  value={formData.procedimientos.examen}
-                  onChange={(e) => handleInputChange(e, 'procedimientos', 'examen')}
-                  className="board-docente-input"
-                />
-              </div>
-            </div>
-          </div>
-          {/* Sección: Bibliografía */}
-          <div className="board-docente-section">
-            <label className="board-docente-label">Bibliografía - Fuentes de Consulta</label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="board-docente-label">Básica</label>
-                {formData.bibliografia.basica.map((item, index) => (
-                  <select
-                    key={index}
-                    value={item}
-                    onChange={(e) => handleInputChange(e, 'bibliografia', 'basica', index)}
-                    className="board-docente-select"
-                  >
-                    <option value="">Seleccione una referencia</option>
-                    {bibliographyDB.basica.map((ref) => (
-                      <option key={ref} value={ref}>{ref}</option>
-                    ))}
-                  </select>
+
+            {/* Sección: Selección de Asignatura */}
+            <div className="mb-4">
+              <label className="form-label fw-bold">Seleccionar Asignatura</label>
+              <select
+                className="form-select"
+                value={selectedSubject}
+                onChange={(e) => {
+                  setSelectedSubject(e.target.value);
+                  setFormData((prev) => ({ ...prev, asignatura: e.target.value }));
+                }}
+              >
+                <option value="">Seleccione una asignatura</option>
+                {subjectsDB.map((subject) => (
+                  <option key={subject} value={subject}>{subject}</option>
                 ))}
-                <button
-                  type="button"
-                  onClick={() => addBibliography('basica')}
-                  className="board-docente-btn futuristic-btn"
-                >
-                  Agregar Referencia
-                </button>
+              </select>
+            </div>
+
+            {/* Sección: Cargar Archivos */}
+            <div className="row mb-4">
+              <div className="col-md-6">
+                <label className="form-label fw-bold">Cargar Documento Word</label>
+                <input
+                  type="file"
+                  accept=".docx"
+                  className="form-control"
+                  onChange={handleFileUpload}
+                />
+                {fileName && (
+                  <small className="form-text text-muted mt-2">
+                    Archivo cargado: {fileName}
+                  </small>
+                )}
               </div>
-              <div>
-                <label className="board-docente-label">Complementaria</label>
-                {formData.bibliografia.complementaria.map((item, index) => (
-                  <select
-                    key={index}
-                    value={item}
-                    onChange={(e) => handleInputChange(e, 'bibliografia', 'complementaria', index)}
-                    className="board-docente-select"
-                  >
-                    <option value="">Seleccione una referencia</option>
-                    {bibliographyDB.complementaria.map((ref) => (
-                      <option key={ref} value={ref}>{ref}</option>
-                    ))}
-                  </select>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => addBibliography('complementaria')}
-                  className="board-docente-btn futuristic-btn"
-                >
-                  Agregar Referencia
-                </button>
+              <div className="col-md-6">
+                <label className="form-label fw-bold">Cargar JSON</label>
+                <input
+                  type="file"
+                  accept=".json"
+                  className="form-control"
+                  onChange={loadJSON}
+                />
               </div>
             </div>
-          </div>
-          {/* Sección: Visado */}
-          <div className="board-docente-section visado-grid-futuristic">
-            <label className="board-docente-label">Visado</label>
-            <div className="visado-row">
-              {['decano', 'director', 'coordinador', 'docente'].map((role) => (
-                <div className="visado-col" key={role}>
-                  <div className="visado-nombre futuristic-label">{role.charAt(0).toUpperCase() + role.slice(1)}</div>
-                  <img
-                    src={qrCodes[role]}
-                    alt={`QR ${role}`}
-                    className="visado-qr futuristic-qr"
-                    width="80"
-                  />
+            
+            {/* Información sobre la plantilla */}
+            <div className="alert alert-info mb-4" role="alert">
+              <i className="bi bi-info-circle me-2"></i>
+              <strong>Información:</strong> Al exportar a Word, se utilizará la plantilla oficial "Anexo No. 1 Formato Programa Analítico.docx" 
+              ubicada en la carpeta pública. Los datos del formulario se insertarán automáticamente en la plantilla.
+            </div>
+
+            {/* Sección: Datos Principales */}
+            <div className="mb-4">
+              <h3 className="mb-3">Datos Principales</h3>
+              <div className="row">
+                <div className="col-md-4 mb-3">
+                  <label className="form-label fw-bold">Asignatura</label>
                   <input
                     type="text"
-                    value={formData.visado[role] || ''}
-                    onChange={(e) => handleInputChange(e, 'visado', role)}
-                    className="board-docente-input visado-input"
-                    placeholder={`Nombre del ${role}`}
-                  />
-                  <input
-                    type="text"
-                    value={formData.visado.fechas[role] || startDatesDB[formData.periodo] || ''}
-                    onChange={(e) => handleInputChange(e, 'visado.fechas', role)}
-                    className="board-docente-input visado-input"
-                    placeholder="Fecha"
+                    className="form-control"
+                    value={formData.asignatura}
+                    onChange={(e) => handleInputChange(e, null, 'asignatura')}
+                    readOnly={!!selectedSubject}
                   />
                 </div>
-              ))}
+                <div className="col-md-4 mb-3">
+                  <label className="form-label fw-bold">Periodo Académico (PAO)</label>
+                  <select
+                    className="form-select"
+                    value={formData.periodo}
+                    onChange={(e) => handleInputChange(e, null, 'periodo')}
+                  >
+                    <option value="">Seleccione un periodo</option>
+                    {periodsDB.map((period) => (
+                      <option key={period} value={period}>{period}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-md-4 mb-3">
+                  <label className="form-label fw-bold">Nivel</label>
+                  <select
+                    className="form-select"
+                    value={formData.nivel}
+                    onChange={(e) => handleInputChange(e, null, 'nivel')}
+                  >
+                    <option value="">Seleccione un nivel</option>
+                    {levelsDB.map((level) => (
+                      <option key={level} value={level}>{level}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
-          </div>
-          {/* Botones de acción */}
-          <div className="futuristic-btn-group">
-            <button
-              type="button"
-              onClick={exportToJSON}
-              className="board-docente-btn futuristic-btn"
-            >
-              <span className="material-icons board-docente-icon">download</span>
-              Exportar a JSON
-            </button>
-            <button
-              type="button"
-              onClick={exportToWord}
-              className="board-docente-btn futuristic-btn"
-            >
-              <span className="material-icons board-docente-icon">description</span>
-              Exportar a Word
-            </button>
-            <button
-              type="button"
-              onClick={exportToPDF}
-              className="board-docente-btn futuristic-btn"
-            >
-              <span className="material-icons board-docente-icon">picture_as_pdf</span>
-              Exportar a PDF
-            </button>
-            <button
-              type="button"
-              onClick={togglePreview}
-              className="board-docente-btn futuristic-btn"
-            >
-              <span className="material-icons board-docente-icon">visibility</span>
-              Previsualizar
-            </button>
+
+            {/* Sección: Caracterización, Objetivos, Competencias */}
+            <div className="mb-4">
+              <h3 className="mb-3">Descripción General</h3>
+              <div className="mb-3">
+                <label className="form-label fw-bold">Caracterización</label>
+                <textarea
+                  className="form-control"
+                  value={formData.caracterizacion}
+                  onChange={(e) => handleInputChange(e, null, 'caracterizacion')}
+                  rows="4"
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label fw-bold">Objetivos de la Asignatura</label>
+                <textarea
+                  className="form-control"
+                  value={formData.objetivos}
+                  onChange={(e) => handleInputChange(e, null, 'objetivos')}
+                  rows="4"
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label fw-bold">Competencias</label>
+                <textarea
+                  className="form-control"
+                  value={formData.competencias}
+                  onChange={(e) => handleInputChange(e, null, 'competencias')}
+                  rows="4"
+                />
+              </div>
+            </div>
+
+            {/* Sección: Resultados de Aprendizaje */}
+            <div className="mb-4">
+              <h3 className="mb-3">Resultados de Aprendizaje</h3>
+              <div className="row">
+                <div className="col-md-4 mb-3">
+                  <label className="form-label fw-bold">Actitudinales (valores y habilidades blandas)</label>
+                  <textarea
+                    className="form-control"
+                    value={formData.resultados.actitudinales}
+                    onChange={(e) => handleInputChange(e, 'resultados', 'actitudinales')}
+                    rows="3"
+                  />
+                </div>
+                <div className="col-md-4 mb-3">
+                  <label className="form-label fw-bold">Cognitivos</label>
+                  <textarea
+                    className="form-control"
+                    value={formData.resultados.cognitivos}
+                    onChange={(e) => handleInputChange(e, 'resultados', 'cognitivos')}
+                    rows="3"
+                  />
+                </div>
+                <div className="col-md-4 mb-3">
+                  <label className="form-label fw-bold">Procedimentales</label>
+                  <textarea
+                    className="form-control"
+                    value={formData.resultados.procedimentales}
+                    onChange={(e) => handleInputChange(e, 'resultados', 'procedimentales')}
+                    rows="3"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Sección: Unidades Temáticas */}
+            <div className="mb-4">
+              <h3 className="mb-3">Contenidos de la Asignatura</h3>
+              {formData.unidades.map((unidad, index) => (
+                <div key={index} className="card mb-3">
+                  <div className="card-body">
+                    <div className="row align-items-center">
+                      <div className="col-md-3">
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={unidad.nombre}
+                          readOnly
+                        />
+                      </div>
+                      <div className="col-md-8">
+                        <textarea
+                          className="form-control"
+                          value={unidad.descripcion}
+                          onChange={(e) => handleInputChange(e, 'unidades', 'descripcion', index)}
+                          rows="2"
+                        />
+                      </div>
+                      <div className="col-md-1 text-end">
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() => removeUnit(index)}
+                          title="Eliminar Unidad"
+                        >
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button className="btn btn-success" onClick={addUnit}>
+                <i className="bi bi-plus-circle me-2"></i>Agregar Unidad
+              </button>
+            </div>
+
+            {/* Sección: Metodología */}
+            <div className="mb-4">
+              <h3 className="mb-3">Metodología</h3>
+              <textarea
+                className="form-control"
+                value={formData.metodologia}
+                onChange={(e) => handleInputChange(e, null, 'metodologia')}
+                rows="4"
+              />
+            </div>
+
+            {/* Sección: Procedimientos de Evaluación */}
+            <div className="mb-4">
+              <h3 className="mb-3">Procedimientos de Evaluación</h3>
+              <div className="row">
+                <div className="col-md-6 mb-3">
+                  <label className="form-label fw-bold">Docencia</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={formData.procedimientos.docencia}
+                    onChange={(e) => handleInputChange(e, 'procedimientos', 'docencia')}
+                  />
+                </div>
+                <div className="col-md-6 mb-3">
+                  <label className="form-label fw-bold">Prácticas Formativas de Aplicación y Experimentación</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={formData.procedimientos.practicas}
+                    onChange={(e) => handleInputChange(e, 'procedimientos', 'practicas')}
+                  />
+                </div>
+                <div className="col-md-6 mb-3">
+                  <label className="form-label fw-bold">Trabajo Autónomo</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={formData.procedimientos.autonomo}
+                    onChange={(e) => handleInputChange(e, 'procedimientos', 'autonomo')}
+                  />
+                </div>
+                <div className="col-md-6 mb-3">
+                  <label className="form-label fw-bold">Examen</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={formData.procedimientos.examen}
+                    onChange={(e) => handleInputChange(e, 'procedimientos', 'examen')}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Sección: Bibliografía */}
+            <div className="mb-4">
+              <h3 className="mb-3">Bibliografía - Fuentes de Consulta</h3>
+              <div className="row">
+                <div className="col-md-6">
+                  <h4>Bibliografía Básica</h4>
+                  {formData.bibliografia.basica.map((item, index) => (
+                    <div key={index} className="input-group mb-2">
+                      <select
+                        className="form-select"
+                        value={item}
+                        onChange={(e) => handleInputChange(e, 'bibliografia', 'basica', index)}
+                      >
+                        <option value="">Seleccione una referencia</option>
+                        {bibliographyDB.basica.map((ref) => (
+                          <option key={ref} value={ref}>{ref}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                  <button
+                    className="btn btn-success btn-sm"
+                    onClick={() => addBibliography('basica')}
+                  >
+                    <i className="bi bi-plus-circle me-2"></i>Agregar Referencia
+                  </button>
+                </div>
+                <div className="col-md-6">
+                  <h4>Bibliografía Complementaria</h4>
+                  {formData.bibliografia.complementaria.map((item, index) => (
+                    <div key={index} className="input-group mb-2">
+                      <select
+                        className="form-select"
+                        value={item}
+                        onChange={(e) => handleInputChange(e, 'bibliografia', 'complementaria', index)}
+                      >
+                        <option value="">Seleccione una referencia</option>
+                        {bibliographyDB.complementaria.map((ref) => (
+                          <option key={ref} value={ref}>{ref}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                  <button
+                    className="btn btn-success btn-sm"
+                    onClick={() => addBibliography('complementaria')}
+                  >
+                    <i className="bi bi-plus-circle me-2"></i>Agregar Referencia
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Sección: Visado */}
+            <div className="mb-4">
+              <h3 className="mb-3">Visado</h3>
+              <div className="visado-row">
+                {['decano', 'director', 'coordinador', 'docente'].map((role) => (
+                  <div className="visado-col" key={role}>
+                    <h5 className="text-capitalize">{role}</h5>
+                    <img src={qrCodes[role]} alt={`QR ${role}`} className="visado-qr" />
+                    <input
+                      type="text"
+                      className="form-control mb-2"
+                      value={formData.visado[role] || ''}
+                      onChange={(e) => handleInputChange(e, 'visado', role)}
+                      placeholder={`Nombre del ${role}`}
+                    />
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={formData.visado.fechas[role] || startDatesDB[formData.periodo] || ''}
+                      onChange={(e) => handleInputChange(e, 'visado.fechas', role)}
+                      placeholder="Fecha"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Botones de Acción */}
+            <div className="d-flex justify-content-end gap-2">
+              <button className="btn btn-primary" onClick={exportToJSON}>
+                <i className="bi bi-file-earmark-code me-2"></i>Exportar a JSON
+              </button>
+              <button 
+                className="btn btn-success" 
+                onClick={exportToWord}
+                disabled={isLoadingWord}
+              >
+                {isLoadingWord ? (
+                  <>
+                    <div className="spinner-border spinner-border-sm me-2" role="status"></div>
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-file-earmark-word me-2"></i>Exportar a Word
+                  </>
+                )}
+              </button>
+              <button className="btn btn-success" onClick={exportToPDF}>
+                <i className="bi bi-file-earmark-pdf me-2"></i>Exportar a PDF
+              </button>
+              <button className="btn btn-secondary" onClick={togglePreview}>
+                <i className="bi bi-eye me-2"></i>Previsualizar
+              </button>
+            </div>
           </div>
         </div>
       )}
